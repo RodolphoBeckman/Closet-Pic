@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,11 +14,12 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { getCategoryForImage } from '@/app/actions';
 import { Loader2, UploadCloud, FileImage, Files, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { StoredImage } from '@/types';
 import { ScrollArea } from './ui/scroll-area';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 type ImageUploadDialogProps = {
   onImagesUploaded: (images: StoredImage[]) => void;
@@ -28,6 +29,8 @@ type ImageUploadDialogProps = {
 interface UploadFile {
   file: File;
   previewUrl: string;
+  referencia: string;
+  marca: string;
 }
 
 export function ImageUploadDialog({ onImagesUploaded, children }: ImageUploadDialogProps) {
@@ -49,7 +52,7 @@ export function ImageUploadDialog({ onImagesUploaded, children }: ImageUploadDia
         }
         const reader = new FileReader();
         reader.onloadend = () => {
-          newFiles.push({ file, previewUrl: reader.result as string });
+          newFiles.push({ file, previewUrl: reader.result as string, referencia: '', marca: '' });
           // If all files are processed
           if (newFiles.length + validationErrors.length === selectedFiles.length) {
             setFiles(prev => [...prev, ...newFiles]);
@@ -67,6 +70,12 @@ export function ImageUploadDialog({ onImagesUploaded, children }: ImageUploadDia
     }
   };
 
+  const handleFieldChange = (index: number, field: 'referencia' | 'marca', value: string) => {
+    const updatedFiles = [...files];
+    updatedFiles[index][field] = value;
+    setFiles(updatedFiles);
+  };
+
   const resetState = () => {
     setFiles([]);
   }
@@ -81,63 +90,38 @@ export function ImageUploadDialog({ onImagesUploaded, children }: ImageUploadDia
   const handleUpload = async () => {
     if (files.length === 0) {
       toast({
-        title: 'No files selected',
-        description: 'Please select one or more image files to upload.',
+        title: 'Nenhum arquivo selecionado',
+        description: 'Selecione uma ou mais imagens para fazer o upload.',
         variant: 'destructive',
       });
       return;
     }
 
     const today = new Date();
-    const dia = String(today.getDate()).padStart(2, '0');
-    const mes = today.toLocaleString('default', { month: 'long' });
-    const ano = String(today.getFullYear());
+    const dia = format(today, 'dd');
+    const mes = format(today, 'LLLL', { locale: ptBR }); // Full month name in Portuguese
+    const ano = format(today, 'yyyy');
 
-    startTransition(async () => {
-      const uploadedImages: StoredImage[] = [];
-      let failureCount = 0;
-
-      await Promise.all(
-        files.map(async ({ file, previewUrl }) => {
-          const { category, referencia, marca, error } = await getCategoryForImage(previewUrl);
-
-          if (error || !category) {
-            failureCount++;
-          } else {
-            uploadedImages.push({
-              id: `${new Date().toISOString()}-${file.name}`,
-              src: previewUrl,
-              category,
-              alt: file.name,
-              referencia: referencia || undefined,
-              marca: marca || undefined,
-              dia,
-              mes,
-              ano,
-            });
-          }
-        })
-      );
+    startTransition(() => {
+      const uploadedImages: StoredImage[] = files.map(({ file, previewUrl, referencia, marca }) => ({
+        id: `${new Date().toISOString()}-${file.name}`,
+        src: previewUrl,
+        category: 'default',
+        alt: file.name,
+        referencia: referencia || undefined,
+        marca: marca || undefined,
+        dia,
+        mes,
+        ano,
+      }));
       
-      if (uploadedImages.length > 0) {
-        onImagesUploaded(uploadedImages);
-        toast({
-          title: 'Upload Complete',
-          description: `${uploadedImages.length} image(s) uploaded and categorized successfully.`,
-        });
-      }
-
-      if (failureCount > 0) {
-         toast({
-          title: 'Some Uploads Failed',
-          description: `${failureCount} image(s) could not be categorized.`,
-          variant: 'destructive',
-        });
-      }
-
-      if (uploadedImages.length > 0 || failureCount > 0) {
-        handleOpenChange(false);
-      }
+      onImagesUploaded(uploadedImages);
+      toast({
+        title: 'Upload Completo',
+        description: `${uploadedImages.length} imagem(ns) carregada(s) com sucesso.`,
+      });
+      
+      handleOpenChange(false);
     });
   };
   
@@ -148,29 +132,42 @@ export function ImageUploadDialog({ onImagesUploaded, children }: ImageUploadDia
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
-          <DialogTitle>Upload Images</DialogTitle>
+          <DialogTitle>Upload de Imagens</DialogTitle>
           <DialogDescription>
-            Select images from your device. We&apos;ll automatically categorize them for you.
+            Adicione as informações para cada imagem. A data será preenchida automaticamente.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           {files.length > 0 ? (
             <div className="space-y-4">
-               <ScrollArea className="h-64 w-full pr-4">
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {files.map(({file, previewUrl}) => (
-                    <div key={file.name} className="relative group">
-                      <Image src={previewUrl} alt={file.name} width={150} height={150} className="rounded-md object-cover aspect-square" />
-                      <Button
+               <ScrollArea className="h-96 w-full pr-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {files.map(({file, previewUrl}, index) => (
+                    <div key={file.name} className="relative group border rounded-lg p-4 space-y-4">
+                       <Button
                         variant="destructive"
                         size="icon"
-                        className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100"
+                        className="absolute top-2 right-2 h-6 w-6 opacity-20 group-hover:opacity-100 transition-opacity"
                         onClick={() => removeFile(file.name)}
                       >
                         <X className="h-4 w-4" />
                       </Button>
+                      <div className='flex items-start gap-4'>
+                        <Image src={previewUrl} alt={file.name} width={100} height={100} className="rounded-md object-cover aspect-square" />
+                        <div className="w-full space-y-2">
+                           <p className="text-sm font-medium text-muted-foreground truncate">{file.name}</p>
+                           <div>
+                            <Label htmlFor={`referencia-${index}`} className='text-xs'>Referência</Label>
+                            <Input id={`referencia-${index}`} placeholder="Ex: 04199-A" onChange={(e) => handleFieldChange(index, 'referencia', e.target.value)} />
+                          </div>
+                          <div>
+                            <Label htmlFor={`marca-${index}`} className='text-xs'>Marca</Label>
+                            <Input id={`marca-${index}`} placeholder="Ex: Nike" onChange={(e) => handleFieldChange(index, 'marca', e.target.value)} />
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -178,7 +175,7 @@ export function ImageUploadDialog({ onImagesUploaded, children }: ImageUploadDia
               <Button variant="outline" className="w-full" asChild>
                 <Label htmlFor="picture-upload-more">
                   <Files className="mr-2 h-4 w-4" />
-                  Add more images
+                  Adicionar mais imagens
                 </Label>
               </Button>
                <Input id="picture-upload-more" type="file" className="hidden" accept="image/*" onChange={handleFileChange} multiple />
@@ -188,8 +185,8 @@ export function ImageUploadDialog({ onImagesUploaded, children }: ImageUploadDia
               <Label htmlFor="picture-upload" className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
                   <UploadCloud className="w-10 h-10 mb-3 text-muted-foreground" />
-                  <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold text-primary">Click to upload</span> or drag and drop</p>
-                  <p className="text-xs text-muted-foreground">PNG, JPG, GIF up to 4MB</p>
+                  <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold text-primary">Clique para fazer upload</span> ou arraste e solte</p>
+                  <p className="text-xs text-muted-foreground">PNG, JPG, GIF até 4MB</p>
                 </div>
               </Label>
               <Input id="picture-upload" type="file" className="hidden" accept="image/*" onChange={handleFileChange} multiple />
@@ -198,22 +195,14 @@ export function ImageUploadDialog({ onImagesUploaded, children }: ImageUploadDia
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => handleOpenChange(false)} disabled={isPending}>
-            Cancel
+            Cancelar
           </Button>
           <Button onClick={handleUpload} disabled={files.length === 0 || isPending}>
             {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4" />}
-            Upload & Categorize {files.length > 0 ? `(${files.length})` : ''}
+            Salvar {files.length > 0 ? `(${files.length})` : ''}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
-
-// Add this to src/components/ui/dialog.tsx to support X icon on remove button
-// import { X } from "lucide-react"
-// And in the Button component just use <X className="h-4 w-4" />
-// The `lucide-react` library is already a dependency.
-// Adding a new `ScrollArea` component to `src/components/ui/scroll-area.tsx`
-// as it is used here and is a standard shadcn component.
-// Adding a new `Files` icon to lucide-react, as it is used here.
