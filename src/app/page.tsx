@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { FileImage, Upload } from 'lucide-react';
 import Header from '@/components/header';
 import { ImageUploadDialog } from '@/components/image-upload-dialog';
-import type { StoredImage } from '@/types';
+import type { StoredImage, GroupedImage } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
@@ -32,32 +32,57 @@ export default function Home() {
     setImages((prevImages) => [...uploadedImages, ...prevImages]);
   };
 
-  const filteredImages = useMemo(() => {
-    let filtered = images;
+  const groupedAndFilteredImages = useMemo(() => {
+    // 1. Group images by referencia
+    const grouped: { [key: string]: GroupedImage } = images.reduce((acc, image) => {
+      const ref = image.referencia || 'sem-referencia';
+      if (!acc[ref]) {
+        acc[ref] = {
+          referencia: image.referencia || '-',
+          marca: image.marca,
+          dia: image.dia,
+          mes: image.mes,
+          ano: image.ano,
+          dataRegistrada: image.dataRegistrada,
+          images: [],
+        };
+      }
+      acc[ref].images.push({ id: image.id, src: image.src, alt: image.alt });
+      return acc;
+    }, {} as { [key: string]: GroupedImage });
 
+    let filteredGroups = Object.values(grouped);
+
+    // 2. Filter the groups
     if (searchQuery) {
-      filtered = filtered.filter((image) =>
-        image.marca?.toLowerCase().includes(searchQuery.toLowerCase())
+      filteredGroups = filteredGroups.filter((group) =>
+        group.marca?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
     if (date) {
       const formattedDate = format(date, 'dd/MM/yyyy');
-      filtered = filtered.filter((image) => {
-        if (!image.dia || !image.mes || !image.ano) return false;
-        // Assuming mes is a full month name like 'janeiro', 'fevereiro'
+      filteredGroups = filteredGroups.filter((group) => {
+        if (!group.dia || !group.mes || !group.ano) return false;
         const monthNames: { [key: string]: string } = {
           'janeiro': '01', 'fevereiro': '02', 'março': '03', 'abril': '04',
           'maio': '05', 'junho': '06', 'julho': '07', 'agosto': '08',
           'setembro': '09', 'outubro': '10', 'novembro': '11', 'dezembro': '12'
         };
-        const imageMonth = monthNames[image.mes.toLowerCase()];
-        const imageDateStr = `${image.dia}/${imageMonth}/${image.ano}`;
+        const imageMonth = monthNames[group.mes.toLowerCase()];
+        const imageDateStr = `${group.dia}/${imageMonth}/${group.ano}`;
         return imageDateStr === formattedDate;
       });
     }
+    
+    // Sort by most recent
+    filteredGroups.sort((a, b) => {
+      const dateA = new Date(`${a.ano}-${a.mes}-${a.dia} ${a.dataRegistrada?.split(' ')[3] || '00:00'}`).getTime();
+      const dateB = new Date(`${b.ano}-${b.mes}-${b.dia} ${b.dataRegistrada?.split(' ')[3] || '00:00'}`).getTime();
+      return (b.dataRegistrada ? new Date(b.dataRegistrada).getTime() : 0) - (a.dataRegistrada ? new Date(a.dataRegistrada).getTime() : 0);
+    });
 
-    return filtered;
+    return filteredGroups;
   }, [images, searchQuery, date]);
   
   const clearFilters = () => {
@@ -111,14 +136,14 @@ export default function Home() {
                 <Button variant="ghost" onClick={clearFilters}>Limpar filtros</Button>
               )}
           </div>
-          {filteredImages.length > 0 ? (
+          {groupedAndFilteredImages.length > 0 ? (
             <div className="rounded-lg border">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Referência</TableHead>
                     <TableHead>Marca</TableHead>
-                    <TableHead>Foto</TableHead>
+                    <TableHead>Fotos</TableHead>
                     <TableHead>Data registrada</TableHead>
                     <TableHead>Dia</TableHead>
                     <TableHead>Mês</TableHead>
@@ -126,23 +151,28 @@ export default function Home() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredImages.map((image) => (
-                    <TableRow key={image.id}>
-                      <TableCell>{image.referencia || '-'}</TableCell>
-                      <TableCell><Badge variant="outline">{image.marca || '-'}</Badge></TableCell>
+                  {groupedAndFilteredImages.map((group) => (
+                    <TableRow key={group.referencia}>
+                      <TableCell>{group.referencia}</TableCell>
+                      <TableCell><Badge variant="outline">{group.marca || '-'}</Badge></TableCell>
                       <TableCell>
-                        <Image
-                          src={image.src}
-                          alt={image.alt}
-                          width={40}
-                          height={40}
-                          className="rounded-md object-cover"
-                        />
+                        <div className="flex items-center gap-2">
+                          {group.images.map(image => (
+                            <Image
+                              key={image.id}
+                              src={image.src}
+                              alt={image.alt}
+                              width={40}
+                              height={40}
+                              className="rounded-md object-cover"
+                            />
+                          ))}
+                        </div>
                       </TableCell>
-                      <TableCell>{image.dataRegistrada || '-'}</TableCell>
-                      <TableCell>{image.dia || '-'}</TableCell>
-                      <TableCell className="capitalize">{image.mes || '-'}</TableCell>
-                      <TableCell>{image.ano || '-'}</TableCell>
+                      <TableCell>{group.dataRegistrada || '-'}</TableCell>
+                      <TableCell>{group.dia || '-'}</TableCell>
+                      <TableCell className="capitalize">{group.mes || '-'}</TableCell>
+                      <TableCell>{group.ano || '-'}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

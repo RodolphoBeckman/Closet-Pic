@@ -11,3 +11,17 @@ export interface StoredImage {
   ano?: string;
   dataRegistrada?: string;
 }
+
+export interface GroupedImage {
+  referencia: string;
+  marca?: string;
+  dia?: string;
+  mes?: string;
+  ano?: string;
+  dataRegistrada?: string;
+  images: {
+    id: string;
+    src: string;
+    alt: string;
+  }[];
+}
