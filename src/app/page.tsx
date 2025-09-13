@@ -11,7 +11,9 @@ import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
+import { DateRange } from 'react-day-picker';
+import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import {
   Table,
@@ -30,7 +32,7 @@ type ViewMode = 'table' | 'gallery';
 export default function Home() {
   const [images, setImages] = useState<StoredImage[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [date, setDate] = useState<Date | undefined>();
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('gallery');
 
@@ -47,30 +49,33 @@ export default function Home() {
             image.referencia?.toLowerCase().includes(searchQuery.toLowerCase())
         );
     }
-    if (date) {
-        const formattedDate = format(date, 'dd/MM/yyyy');
-        filtered = filtered.filter((image) => {
-            if (!image.dia || !image.mes || !image.ano) return false;
-            const monthNames: { [key: string]: string } = {
-                'janeiro': '01', 'fevereiro': '02', 'março': '03', 'abril': '04',
-                'maio': '05', 'junho': '06', 'julho': '07', 'agosto': '08',
-                'setembro': '09', 'outubro': '10', 'novembro': '11', 'dezembro': '12'
-            };
-            const imageMonth = monthNames[image.mes.toLowerCase()];
-            const imageDateStr = `${image.dia}/${imageMonth}/${image.ano}`;
-            return imageDateStr === formattedDate;
-        });
+    
+    if (dateRange?.from) {
+      filtered = filtered.filter((image) => {
+        if (!image.dataRegistrada) return false;
+        try {
+          const imageDate = parse(image.dataRegistrada, "dd 'de' MMMM 'de' yyyy HH:mm", new Date(), { locale: ptBR });
+          if (dateRange.to) {
+            return imageDate >= dateRange.from && imageDate <= dateRange.to;
+          }
+          // If only from is selected, check if it's on the same day
+          return imageDate.toDateString() === dateRange.from?.toDateString();
+        } catch (error) {
+          console.error("Error parsing date:", image.dataRegistrada, error);
+          return false;
+        }
+      });
     }
 
     // Sort by most recent
     filtered.sort((a, b) => {
-      const dateA = a.dataRegistrada ? new Date(a.dataRegistrada.replace(/(\d{2}) de (\w+) de (\d{4}) (\d{2}:\d{2})/, '$2 $1, $3 $4')).getTime() : 0;
-      const dateB = b.dataRegistrada ? new Date(b.dataRegistrada.replace(/(\d{2}) de (\w+) de (\d{4}) (\d{2}:\d{2})/, '$2 $1, $3 $4')).getTime() : 0;
+      const dateA = a.dataRegistrada ? parse(a.dataRegistrada, "dd 'de' MMMM 'de' yyyy HH:mm", new Date(), { locale: ptBR }).getTime() : 0;
+      const dateB = b.dataRegistrada ? parse(b.dataRegistrada, "dd 'de' MMMM 'de' yyyy HH:mm", new Date(), { locale: ptBR }).getTime() : 0;
       return dateB - dateA;
     });
 
     return filtered;
-  }, [images, searchQuery, date]);
+  }, [images, searchQuery, dateRange]);
 
 
   const tableGroupedImages: GroupedImage[] = useMemo(() => {
@@ -130,7 +135,7 @@ export default function Home() {
 
   const clearFilters = () => {
     setSearchQuery('');
-    setDate(undefined);
+    setDateRange(undefined);
   }
   
   const currentImage = useMemo(() => {
@@ -167,23 +172,34 @@ export default function Home() {
                     variant={"outline"}
                     className={cn(
                       "w-full sm:max-w-xs justify-start text-left font-normal",
-                      !date && "text-muted-foreground"
+                      !dateRange && "text-muted-foreground"
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? format(date, "PPP") : <span>Filtrar por data</span>}
+                    {dateRange?.from ? (
+                      dateRange.to ? (
+                        <>
+                          {format(dateRange.from, "LLL dd, y")} -{" "}
+                          {format(dateRange.to, "LLL dd, y")}
+                        </>
+                      ) : (
+                        format(dateRange.from, "LLL dd, y")
+                      )
+                    ) : (
+                      <span>Filtrar por data</span>
+                    )}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
                   <Calendar
-                    mode="single"
-                    selected={date}
-                    onSelect={setDate}
+                    mode="range"
+                    selected={dateRange}
+                    onSelect={setDateRange}
                     initialFocus
                   />
                 </PopoverContent>
               </Popover>
-               {(searchQuery || date) && (
+               {(searchQuery || dateRange) && (
                 <Button variant="ghost" onClick={clearFilters}>Limpar filtros</Button>
               )}
               <div className="flex items-center gap-2 ml-auto">
@@ -272,3 +288,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
