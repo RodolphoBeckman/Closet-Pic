@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { FileImage, Upload } from 'lucide-react';
+import { FileImage, Upload, LayoutGrid, List } from 'lucide-react';
 import Header from '@/components/header';
 import { ImageUploadDialog } from '@/components/image-upload-dialog';
 import type { StoredImage, GroupedImage } from '@/types';
@@ -23,12 +23,16 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { ImageViewer } from '@/components/image-viewer';
+import { GalleryView } from '@/components/gallery-view';
+
+type ViewMode = 'table' | 'gallery';
 
 export default function Home() {
   const [images, setImages] = useState<StoredImage[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [date, setDate] = useState<Date | undefined>();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('table');
 
 
   const handleImagesUploaded = (uploadedImages: StoredImage[]) => {
@@ -111,7 +115,7 @@ export default function Home() {
       </Header>
       <main className="flex-1">
         <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
-          <div className="mb-8 flex flex-col sm:flex-row gap-4">
+          <div className="mb-8 flex flex-col sm:flex-row gap-4 items-center">
               <Input
                 type="search"
                 placeholder="Filtrar por marca..."
@@ -144,50 +148,67 @@ export default function Home() {
                {(searchQuery || date) && (
                 <Button variant="ghost" onClick={clearFilters}>Limpar filtros</Button>
               )}
+              <div className="flex items-center gap-2 ml-auto">
+                <Button variant={viewMode === 'table' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('table')}>
+                  <List className="h-5 w-5" />
+                  <span className="sr-only">Table View</span>
+                </Button>
+                <Button variant={viewMode === 'gallery' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('gallery')}>
+                  <LayoutGrid className="h-5 w-5" />
+                  <span className="sr-only">Gallery View</span>
+                </Button>
+              </div>
           </div>
           {groupedAndFilteredImages.length > 0 ? (
-            <div className="rounded-lg border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Referência</TableHead>
-                    <TableHead>Marca</TableHead>
-                    <TableHead>Fotos</TableHead>
-                    <TableHead>Data registrada</TableHead>
-                    <TableHead>Dia</TableHead>
-                    <TableHead>Mês</TableHead>
-                    <TableHead>Ano</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {groupedAndFilteredImages.map((group) => (
-                    <TableRow key={group.referencia}>
-                      <TableCell>{group.referencia}</TableCell>
-                      <TableCell><Badge variant="outline">{group.marca || '-'}</Badge></TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {group.images.map(image => (
-                            <button key={image.id} onClick={() => setSelectedImage(image.id)} className="focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md">
-                              <Image
-                                src={image.src}
-                                alt={image.alt}
-                                width={40}
-                                height={40}
-                                className="rounded-md object-cover cursor-pointer"
-                              />
-                            </button>
-                          ))}
-                        </div>
-                      </TableCell>
-                      <TableCell>{group.dataRegistrada || '-'}</TableCell>
-                      <TableCell>{group.dia || '-'}</TableCell>
-                      <TableCell className="capitalize">{group.mes || '-'}</TableCell>
-                      <TableCell>{group.ano || '-'}</TableCell>
+            viewMode === 'table' ? (
+              <div className="rounded-lg border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Referência</TableHead>
+                      <TableHead>Marca</TableHead>
+                      <TableHead>Fotos</TableHead>
+                      <TableHead>Data registrada</TableHead>
+                      <TableHead>Dia</TableHead>
+                      <TableHead>Mês</TableHead>
+                      <TableHead>Ano</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {groupedAndFilteredImages.map((group) => (
+                      <TableRow key={group.referencia}>
+                        <TableCell>{group.referencia}</TableCell>
+                        <TableCell><Badge variant="outline">{group.marca || '-'}</Badge></TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {group.images.map(image => (
+                              <button key={image.id} onClick={() => setSelectedImage(image.id)} className="focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md">
+                                <Image
+                                  src={image.src}
+                                  alt={image.alt}
+                                  width={40}
+                                  height={40}
+                                  className="rounded-md object-cover cursor-pointer"
+                                />
+                              </button>
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell>{group.dataRegistrada || '-'}</TableCell>
+                        <TableCell>{group.dia || '-'}</TableCell>
+                        <TableCell className="capitalize">{group.mes || '-'}</TableCell>
+                        <TableCell>{group.ano || '-'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+                <GalleryView
+                    imageGroups={groupedAndFilteredImages}
+                    onImageClick={(id) => setSelectedImage(id)}
+                />
+            )
           ) : (
             <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 py-24 text-center mt-8">
               <FileImage className="h-16 w-16 text-muted-foreground/50" />
