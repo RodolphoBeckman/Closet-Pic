@@ -24,8 +24,8 @@ export default function Home() {
   const [images, setImages] = useState<StoredImage[]>(initialImages);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const handleImageUploaded = (image: StoredImage) => {
-    setImages((prevImages) => [image, ...prevImages]);
+  const handleImagesUploaded = (uploadedImages: StoredImage[]) => {
+    setImages((prevImages) => [...uploadedImages, ...prevImages]);
   };
 
   const filteredImages = useMemo(() => {
@@ -38,10 +38,10 @@ export default function Home() {
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
       <Header searchQuery={searchQuery} setSearchQuery={setSearchQuery}>
-        <ImageUploadDialog onImageUploaded={handleImageUploaded}>
+        <ImageUploadDialog onImagesUploaded={handleImagesUploaded}>
           <Button>
             <Upload className="mr-2 h-4 w-4" />
-            Upload Image
+            Upload Images
           </Button>
         </ImageUploadDialog>
       </Header>

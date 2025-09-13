@@ -15,45 +15,60 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getCategoryForImage } from '@/app/actions';
-import { Loader2, UploadCloud, FileImage } from 'lucide-react';
+import { Loader2, UploadCloud, FileImage, Files } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { StoredImage } from '@/types';
+import { ScrollArea } from './ui/scroll-area';
 
 type ImageUploadDialogProps = {
-  onImageUploaded: (image: StoredImage) => void;
+  onImagesUploaded: (images: StoredImage[]) => void;
   children: React.ReactNode;
 };
 
-export function ImageUploadDialog({ onImageUploaded, children }: ImageUploadDialogProps) {
+interface UploadFile {
+  file: File;
+  previewUrl: string;
+}
+
+export function ImageUploadDialog({ onImagesUploaded, children }: ImageUploadDialogProps) {
   const [open, setOpen] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [files, setFiles] = useState<UploadFile[]>([]);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = event.target.files?.[0];
-    if (selectedFile) {
-      if (selectedFile.size > 4 * 1024 * 1024) { // 4MB limit for Genkit flow
-        toast({
-          title: 'File too large',
-          description: 'Please select an image smaller than 4MB.',
-          variant: 'destructive',
-        });
-        return;
-      }
-      setFile(selectedFile);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewUrl(reader.result as string);
-      };
-      reader.readAsDataURL(selectedFile);
+    const selectedFiles = event.target.files;
+    if (selectedFiles && selectedFiles.length > 0) {
+      const newFiles: UploadFile[] = [];
+      const validationErrors: string[] = [];
+
+      Array.from(selectedFiles).forEach(file => {
+        if (file.size > 4 * 1024 * 1024) { // 4MB limit
+          validationErrors.push(`${file.name} is too large (max 4MB).`);
+          return;
+        }
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          newFiles.push({ file, previewUrl: reader.result as string });
+          // If all files are processed
+          if (newFiles.length + validationErrors.length === selectedFiles.length) {
+            setFiles(prev => [...prev, ...newFiles]);
+            if (validationErrors.length > 0) {
+              toast({
+                title: 'Some files were not added',
+                description: validationErrors.join('\n'),
+                variant: 'destructive',
+              });
+            }
+          }
+        };
+        reader.readAsDataURL(file);
+      });
     }
   };
 
   const resetState = () => {
-    setFile(null);
-    setPreviewUrl(null);
+    setFiles([]);
   }
 
   const handleOpenChange = (isOpen: boolean) => {
@@ -64,68 +79,109 @@ export function ImageUploadDialog({ onImageUploaded, children }: ImageUploadDial
   }
 
   const handleUpload = async () => {
-    if (!file || !previewUrl) {
+    if (files.length === 0) {
       toast({
-        title: 'No file selected',
-        description: 'Please select an image file to upload.',
+        title: 'No files selected',
+        description: 'Please select one or more image files to upload.',
         variant: 'destructive',
       });
       return;
     }
 
-    startTransition(async () => {
-      const { category, referencia, marca, dia, mes, ano, error } = await getCategoryForImage(previewUrl);
+    const today = new Date();
+    const dia = String(today.getDate()).padStart(2, '0');
+    const mes = today.toLocaleString('default', { month: 'long' });
+    const ano = String(today.getFullYear());
 
-      if (error || !category) {
+    startTransition(async () => {
+      const uploadedImages: StoredImage[] = [];
+      let failureCount = 0;
+
+      await Promise.all(
+        files.map(async ({ file, previewUrl }) => {
+          const { category, referencia, marca, error } = await getCategoryForImage(previewUrl);
+
+          if (error || !category) {
+            failureCount++;
+          } else {
+            uploadedImages.push({
+              id: `${new Date().toISOString()}-${file.name}`,
+              src: previewUrl,
+              category,
+              alt: file.name,
+              referencia: referencia || undefined,
+              marca: marca || undefined,
+              dia,
+              mes,
+              ano,
+            });
+          }
+        })
+      );
+      
+      if (uploadedImages.length > 0) {
+        onImagesUploaded(uploadedImages);
         toast({
-          title: 'Upload Failed',
-          description: error || 'Could not determine image category.',
-          variant: 'destructive',
+          title: 'Upload Complete',
+          description: `${uploadedImages.length} image(s) uploaded and categorized successfully.`,
         });
-        return;
       }
 
-      onImageUploaded({
-        id: new Date().toISOString(),
-        src: previewUrl,
-        category,
-        alt: file.name,
-        referencia: referencia || undefined,
-        marca: marca || undefined,
-        dia: dia || undefined,
-        mes: mes || undefined,
-        ano: ano || undefined,
-      });
+      if (failureCount > 0) {
+         toast({
+          title: 'Some Uploads Failed',
+          description: `${failureCount} image(s) could not be categorized.`,
+          variant: 'destructive',
+        });
+      }
 
-      toast({
-        title: 'Upload Successful',
-        description: `Image categorized as "${category}".`,
-      });
-
-      handleOpenChange(false);
+      if (uploadedImages.length > 0 || failureCount > 0) {
+        handleOpenChange(false);
+      }
     });
   };
+  
+  const removeFile = (fileName: string) => {
+    setFiles(files.filter(f => f.file.name !== fileName));
+  }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Upload Image</DialogTitle>
+          <DialogTitle>Upload Images</DialogTitle>
           <DialogDescription>
-            Select an image from your device. We&apos;ll automatically categorize it for you.
+            Select images from your device. We&apos;ll automatically categorize them for you.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          {previewUrl ? (
+          {files.length > 0 ? (
             <div className="space-y-4">
-               <div className="relative mx-auto h-48 w-full max-w-sm">
-                <Image src={previewUrl} alt="Image preview" fill className="rounded-md object-contain" />
-              </div>
-              <Button variant="outline" className="w-full" onClick={() => resetState()}>
-                <FileImage className="mr-2 h-4 w-4" />
-                Choose a different image
+               <ScrollArea className="h-64 w-full pr-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {files.map(({file, previewUrl}) => (
+                    <div key={file.name} className="relative group">
+                      <Image src={previewUrl} alt={file.name} width={150} height={150} className="rounded-md object-cover aspect-square" />
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100"
+                        onClick={() => removeFile(file.name)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+              <Button variant="outline" className="w-full" asChild>
+                <Label htmlFor="picture-upload-more">
+                  <Files className="mr-2 h-4 w-4" />
+                  Add more images
+                </Label>
               </Button>
+               <Input id="picture-upload-more" type="file" className="hidden" accept="image/*" onChange={handleFileChange} multiple />
             </div>
           ) : (
             <div className="grid w-full items-center gap-1.5">
@@ -136,7 +192,7 @@ export function ImageUploadDialog({ onImageUploaded, children }: ImageUploadDial
                   <p className="text-xs text-muted-foreground">PNG, JPG, GIF up to 4MB</p>
                 </div>
               </Label>
-              <Input id="picture-upload" type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
+              <Input id="picture-upload" type="file" className="hidden" accept="image/*" onChange={handleFileChange} multiple />
             </div>
           )}
         </div>
@@ -144,12 +200,20 @@ export function ImageUploadDialog({ onImageUploaded, children }: ImageUploadDial
           <Button variant="outline" onClick={() => handleOpenChange(false)} disabled={isPending}>
             Cancel
           </Button>
-          <Button onClick={handleUpload} disabled={!file || isPending}>
+          <Button onClick={handleUpload} disabled={files.length === 0 || isPending}>
             {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4" />}
-            Upload & Categorize
+            Upload & Categorize {files.length > 0 ? `(${files.length})` : ''}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
+
+// Add this to src/components/ui/dialog.tsx to support X icon on remove button
+// import { X } from "lucide-react"
+// And in the Button component just use <X className="h-4 w-4" />
+// The `lucide-react` library is already a dependency.
+// Adding a new `ScrollArea` component to `src/components/ui/scroll-area.tsx`
+// as it is used here and is a standard shadcn component.
+// Adding a new `Files` icon to lucide-react, as it is used here.
