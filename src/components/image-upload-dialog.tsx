@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useTransition, useEffect, Children } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,6 +24,8 @@ import { ptBR } from 'date-fns/locale';
 type ImageUploadDialogProps = {
   onImagesUploaded: (images: StoredImage[]) => void;
   children: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 };
 
 interface UploadFile {
@@ -31,17 +33,21 @@ interface UploadFile {
   previewUrl: string;
 }
 
-export function ImageUploadDialog({ onImagesUploaded, children }: ImageUploadDialogProps) {
-  const [open, setOpen] = useState(false);
+export function ImageUploadDialog({ onImagesUploaded, children, open: controlledOpen, onOpenChange: setControlledOpen }: ImageUploadDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
   const [files, setFiles] = useState<UploadFile[]>([]);
   const [referencia, setReferencia] = useState('');
   const [marca, setMarca] = useState('');
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = setControlledOpen ?? setInternalOpen;
+
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = event.target.files;
     if (selectedFiles && selectedFiles.length > 0) {
+      setOpen(true);
       const newFiles: UploadFile[] = [];
       const validationErrors: string[] = [];
 
@@ -127,9 +133,27 @@ export function ImageUploadDialog({ onImagesUploaded, children }: ImageUploadDia
     setFiles(files.filter(f => f.file.name !== fileName));
   }
 
+  // The DialogTrigger can be the children, or it can be a wrapper around the children
+  const trigger = (
+    <div className="w-full">
+      <Label htmlFor="picture-upload" className="w-full">
+        {children}
+      </Label>
+      <Input
+        id="picture-upload"
+        type="file"
+        className="hidden"
+        accept="image/*"
+        onChange={handleFileChange}
+        multiple
+      />
+    </div>
+  );
+
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle>Upload de Imagens</DialogTitle>
@@ -176,15 +200,15 @@ export function ImageUploadDialog({ onImagesUploaded, children }: ImageUploadDia
                <Input id="picture-upload-more" type="file" className="hidden" accept="image/*" onChange={handleFileChange} multiple />
             </div>
           ) : (
-            <div className="grid w-full items-center gap-1.5">
-              <Label htmlFor="picture-upload" className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+             <div className="grid w-full items-center gap-1.5">
+              <Label htmlFor="picture-upload-initial" className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
                   <UploadCloud className="w-10 h-10 mb-3 text-muted-foreground" />
                   <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold text-primary">Clique para fazer upload</span> ou arraste e solte</p>
                   <p className="text-xs text-muted-foreground">PNG, JPG, GIF até 4MB</p>
                 </div>
               </Label>
-              <Input id="picture-upload" type="file" className="hidden" accept="image/*" onChange={handleFileChange} multiple />
+              <Input id="picture-upload-initial" type="file" className="hidden" accept="image/*" onChange={handleFileChange} multiple />
             </div>
           )}
         </div>

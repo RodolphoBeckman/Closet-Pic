@@ -4,6 +4,8 @@
 
 @layer base {
   :root {
+    --background-start: 240 10% 99%;
+    --background-end: 300 20% 96%;
     --background: 0 0% 98%;
     --foreground: 224 71.4% 4.1%;
     --card: 0 0% 100%;
@@ -32,6 +34,8 @@
   }
  
   .dark {
+    --background-start: 240 10% 10%;
+    --background-end: 300 20% 7%;
     --background: 222.2 84% 6.9%;
     --foreground: 210 40% 98%;
     --card: 222.2 84% 4.9%;
@@ -76,7 +80,7 @@
     height: 100vh;
     background: radial-gradient(circle at var(--mouse-x) var(--mouse-y), rgba(255, 255, 255, 0.06), transparent 20%);
     pointer-events: none;
-    z-index: 100;
+    z-index: -1;
     opacity: 0;
     transition: opacity 0.3s ease-out;
   }
@@ -89,4 +93,3 @@
      background: radial-gradient(circle at var(--mouse-x) var(--mouse-y), rgba(255, 255, 255, 0.03), transparent 25%);
   }
 }
-

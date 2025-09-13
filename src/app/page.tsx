@@ -1,289 +1,108 @@
 'use client';
-
-import { useState, useMemo } from 'react';
-import Image from 'next/image';
-import { Button } from '@/components/ui/button';
-import { FileImage, Upload, LayoutGrid, List } from 'lucide-react';
-import Header from '@/components/header';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Camera, ScanLine, Link as LinkIcon, UploadCloud } from 'lucide-react';
 import { ImageUploadDialog } from '@/components/image-upload-dialog';
-import type { StoredImage, GroupedImage, GalleryGroupedImage } from '@/types';
-import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon } from 'lucide-react';
-import { Calendar } from '@/components/ui/calendar';
-import { format, parse } from 'date-fns';
-import { DateRange } from 'react-day-picker';
-import { ptBR } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { ImageViewer } from '@/components/image-viewer';
-import { GalleryView } from '@/components/gallery-view';
-
-type ViewMode = 'table' | 'gallery';
+import { StoredImage } from '@/types';
 
 export default function Home() {
-  const [images, setImages] = useState<StoredImage[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [dateRange, setDateRange] = useState<DateRange | undefined>();
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>('gallery');
-
+  const router = useRouter();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const handleImagesUploaded = (uploadedImages: StoredImage[]) => {
-    setImages((prevImages) => [...uploadedImages, ...prevImages]);
+    const imagesParam = encodeURIComponent(JSON.stringify(uploadedImages));
+    router.push(`/gallery?images=${imagesParam}`);
   };
 
-  const filteredImages = useMemo(() => {
-    let filtered = images;
-    if (searchQuery) {
-        filtered = filtered.filter((image) =>
-            image.marca?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            image.referencia?.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-    }
-    
-    if (dateRange?.from) {
-      filtered = filtered.filter((image) => {
-        if (!image.dataRegistrada) return false;
-        try {
-          const imageDate = parse(image.dataRegistrada, "dd 'de' MMMM 'de' yyyy HH:mm", new Date(), { locale: ptBR });
-          if (dateRange.to) {
-            return imageDate >= dateRange.from && imageDate <= dateRange.to;
-          }
-          // If only from is selected, check if it's on the same day
-          return imageDate.toDateString() === dateRange.from?.toDateString();
-        } catch (error) {
-          console.error("Error parsing date:", image.dataRegistrada, error);
-          return false;
-        }
+  const handlePaste = async () => {
+    try {
+      const permission = await navigator.permissions.query({
+        name: 'clipboard-read' as any,
       });
+      if (permission.state === 'denied') {
+        throw new Error('Not allowed to read clipboard.');
+      }
+      const clipboardContents = await navigator.clipboard.read();
+      const imageItem = clipboardContents.find((item) =>
+        item.types.some((type) => type.startsWith('image/'))
+      );
+
+      if (imageItem) {
+        const imageType = imageItem.types.find((type) =>
+          type.startsWith('image/')
+        );
+        const blob = await imageItem.getType(imageType!);
+        const reader = new FileReader();
+        reader.onload = () => {
+          const dataUrl = reader.result as string;
+          // Here you can decide what to do with the pasted image.
+          // For now, let's open the dialog with this image.
+          // This part needs more implementation in ImageUploadDialog to accept initial files.
+          console.log('Pasted image data URL:', dataUrl);
+          setIsDialogOpen(true); // Open the dialog
+        };
+        reader.readAsDataURL(blob);
+      } else {
+        // Handle case where clipboard doesn't contain an image
+        alert('No image found on clipboard.');
+      }
+    } catch (error) {
+      console.error('Failed to read clipboard contents: ', error);
+      alert(
+        'Failed to read clipboard. Please check permissions or try another method.'
+      );
     }
-
-    // Sort by most recent
-    filtered.sort((a, b) => {
-      const dateA = a.dataRegistrada ? parse(a.dataRegistrada, "dd 'de' MMMM 'de' yyyy HH:mm", new Date(), { locale: ptBR }).getTime() : 0;
-      const dateB = b.dataRegistrada ? parse(b.dataRegistrada, "dd 'de' MMMM 'de' yyyy HH:mm", new Date(), { locale: ptBR }).getTime() : 0;
-      return dateB - dateA;
-    });
-
-    return filtered;
-  }, [images, searchQuery, dateRange]);
-
-
-  const tableGroupedImages: GroupedImage[] = useMemo(() => {
-    const grouped: { [key: string]: GroupedImage } = filteredImages.reduce((acc, image) => {
-      const ref = image.referencia || 'sem-referencia';
-      if (!acc[ref]) {
-        acc[ref] = {
-          groupKey: ref,
-          referencia: image.referencia || '-',
-          marca: image.marca,
-          dia: image.dia,
-          mes: image.mes,
-          ano: image.ano,
-          dataRegistrada: image.dataRegistrada,
-          images: [],
-        };
-      }
-      acc[ref].images.push({ id: image.id, src: image.src, alt: image.alt });
-      return acc;
-    }, {} as { [key: string]: GroupedImage });
-
-    return Object.values(grouped);
-  }, [filteredImages]);
-
-  const galleryGroupedImages: GalleryGroupedImage[] = useMemo(() => {
-    const groupedByMarca: { [key: string]: { marca: string, references: { [key:string]: GroupedImage } } } = filteredImages.reduce((acc, image) => {
-      const marca = image.marca || 'sem-marca';
-      if (!acc[marca]) {
-        acc[marca] = {
-          marca: image.marca || '-',
-          references: {}
-        };
-      }
-      
-      const ref = image.referencia || 'sem-referencia';
-      if (!acc[marca].references[ref]) {
-          acc[marca].references[ref] = {
-              groupKey: ref,
-              referencia: image.referencia || '-',
-              marca: image.marca,
-              dia: image.dia,
-              mes: image.mes,
-              ano: image.ano,
-              dataRegistrada: image.dataRegistrada,
-              images: [],
-          };
-      }
-      acc[marca].references[ref].images.push({ id: image.id, src: image.src, alt: image.alt });
-      return acc;
-    }, {} as { [key: string]: { marca: string, references: { [key:string]: GroupedImage } } });
-
-    return Object.values(groupedByMarca).map(group => ({
-        marca: group.marca,
-        items: Object.values(group.references),
-    }));
-  }, [filteredImages]);
-
-  const clearFilters = () => {
-    setSearchQuery('');
-    setDateRange(undefined);
-  }
-  
-  const currentImage = useMemo(() => {
-    if (!selectedImage) return null;
-    const allImages = images;
-    return allImages.find(img => img.id === selectedImage) || null;
-  }, [selectedImage, images]);
-
-  const noResults = viewMode === 'table' ? tableGroupedImages.length === 0 : galleryGroupedImages.length === 0;
+  };
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-background">
-      <Header />
-      <main className="flex-1">
-        <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8 max-w-7xl">
-          <div className="mb-8 flex flex-col sm:flex-row gap-4 items-center">
-            <ImageUploadDialog onImagesUploaded={handleImagesUploaded}>
-                <Button>
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload Images
-                </Button>
-            </ImageUploadDialog>
-            <Input
-            type="search"
-            placeholder="Filtrar por marca ou referência..."
-            className="w-full sm:max-w-xs"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <Popover>
-            <PopoverTrigger asChild>
-                <Button
-                variant={"outline"}
-                className={cn(
-                    "w-full sm:max-w-xs justify-start text-left font-normal",
-                    !dateRange && "text-muted-foreground"
-                )}
-                >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {dateRange?.from ? (
-                    dateRange.to ? (
-                    <>
-                        {format(dateRange.from, "LLL dd, y")} -{" "}
-                        {format(dateRange.to, "LLL dd, y")}
-                    </>
-                    ) : (
-                    format(dateRange.from, "LLL dd, y")
-                    )
-                ) : (
-                    <span>Filtrar por data</span>
-                )}
-                </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-                <Calendar
-                mode="range"
-                selected={dateRange}
-                onSelect={setDateRange}
-                initialFocus
-                />
-            </PopoverContent>
-            </Popover>
-            {(searchQuery || dateRange) && (
-            <Button variant="ghost" onClick={clearFilters}>Limpar filtros</Button>
-            )}
-            <div className="flex items-center gap-2 ml-auto">
-            <Button variant={viewMode === 'table' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('table')}>
-                <List className="h-5 w-5" />
-                <span className="sr-only">Table View</span>
-            </Button>
-            <Button variant={viewMode === 'gallery' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('gallery')}>
-                <LayoutGrid className="h-5 w-5" />
-                <span className="sr-only">Gallery View</span>
-            </Button>
-            </div>
-          </div>
-          {!noResults ? (
-            viewMode === 'table' ? (
-              <div className="rounded-lg border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Referência</TableHead>
-                      <TableHead>Marca</TableHead>
-                      <TableHead>Fotos</TableHead>
-                      <TableHead>Data registrada</TableHead>
-                      <TableHead>Dia</TableHead>
-                      <TableHead>Mês</TableHead>
-                      <TableHead>Ano</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {tableGroupedImages.map((group) => (
-                      <TableRow key={group.groupKey}>
-                        <TableCell>{group.referencia}</TableCell>
-                        <TableCell><Badge variant="outline">{group.marca || '-'}</Badge></TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {group.images.map(image => (
-                              <button key={image.id} onClick={() => setSelectedImage(image.id)} className="focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md">
-                                <Image
-                                  src={image.src}
-                                  alt={image.alt}
-                                  width={40}
-                                  height={40}
-                                  className="rounded-md object-cover cursor-pointer"
-                                />
-                              </button>
-                            ))}
-                          </div>
-                        </TableCell>
-                        <TableCell>{group.dataRegistrada || '-'}</TableCell>
-                        <TableCell>{group.dia || '-'}</TableCell>
-                        <TableCell className="capitalize">{group.mes || '-'}</TableCell>
-                        <TableCell>{group.ano || '-'}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+    <div className="flex flex-col min-h-screen w-full bg-gradient-to-br from-background-start to-background-end">
+      <header className="py-8">
+        <div className="container mx-auto flex justify-center items-center gap-2">
+          <Camera className="h-8 w-8 bg-gradient-to-r from-primary to-purple-500 text-transparent bg-clip-text" />
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-purple-500 text-transparent bg-clip-text drop-shadow-[0_0_0.3rem_#ffffff40]">
+            ClosetPic
+          </h1>
+        </div>
+        <p className="text-center text-muted-foreground mt-2">
+          Crie conteúdo de alta qualidade para o seu e-commerce com o poder da IA.
+        </p>
+      </header>
+      <main className="flex-1 flex items-center justify-center p-4">
+        <div className="w-full max-w-xl">
+          <ImageUploadDialog
+            open={isDialogOpen}
+            onOpenChange={setIsDialogOpen}
+            onImagesUploaded={handleImagesUploaded}
+          >
+            <div className="bg-card/50 backdrop-blur-sm border-2 border-dashed border-primary/30 rounded-2xl p-8 sm:p-12 text-center cursor-pointer hover:border-primary/50 hover:bg-card/60 transition-all duration-300 shadow-lg">
+              <div className="flex justify-center items-center">
+                <div className="p-4 rounded-full bg-primary/10 mb-4 inline-block">
+                  <ScanLine className="h-10 w-10 text-primary" />
+                </div>
               </div>
-            ) : (
-                <GalleryView
-                    imageGroups={galleryGroupedImages}
-                    onImageClick={(id) => setSelectedImage(id)}
-                />
-            )
-          ) : (
-            <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 py-24 text-center mt-8">
-              <FileImage className="h-16 w-16 text-muted-foreground/50" />
-              <h2 className="mt-6 text-xl font-semibold tracking-tight text-foreground">
-                {images.length > 0 ? 'Nenhuma imagem encontrada' : 'Nenhuma imagem cadastrada'}
-              </h2>
-              <p className="mt-2 text-muted-foreground">
-                 {images.length > 0 ? 'Tente um filtro diferente ou limpe a seleção.' : 'Comece a cadastrar suas imagens.'}
+              <p className="text-lg font-semibold text-foreground">
+                Arraste, cole, ou{' '}
+                <span className="text-primary underline">clique para escanear</span>
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Suporta: JPG, PNG, WEBP
               </p>
             </div>
-          )}
+          </ImageUploadDialog>
         </div>
       </main>
-      
-      {currentImage && (
-        <ImageViewer
-          src={currentImage.src}
-          alt={currentImage.alt}
-          isOpen={!!selectedImage}
-          onOpenChange={(open) => !open && setSelectedImage(null)}
-        />
-      )}
+      <footer className="py-8">
+        <div className="container mx-auto flex items-center justify-center gap-8 text-muted-foreground">
+           <div className="flex items-center gap-2">
+            <UploadCloud className="h-5 w-5" />
+            <span>Upload de Arquivos</span>
+          </div>
+          <div className="flex items-center gap-2 cursor-pointer" onClick={handlePaste}>
+            <LinkIcon className="h-5 w-5" />
+            <span>Colar da Área de Transferência</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
