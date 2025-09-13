@@ -1,28 +1,26 @@
 'use client';
 
 import { Camera } from 'lucide-react';
+import { ThemeToggle } from './theme-toggle';
 
-type HeaderProps = {
-  children?: React.ReactNode;
-};
-
-export default function Header({ children }: HeaderProps) {
+export default function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 max-w-screen-2xl items-center justify-center">
-        <div className="flex items-center space-x-2">
+      <div className="container flex h-14 max-w-screen-2xl items-center">
+        <div className="mr-4 hidden md:flex">
           <a href="/" className="flex items-center space-x-2">
             <Camera className="h-6 w-6 text-primary" />
             <span className="font-bold sm:inline-block">ImageKeep</span>
           </a>
         </div>
-        {children && (
-          <div className="flex flex-1 items-center justify-end">
-            <nav className="flex items-center">
-              {children}
-            </nav>
+        <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
+          <div className="w-full flex-1 md:w-auto md:flex-none">
+            {/* Search can go here if needed */}
           </div>
-        )}
+          <nav className="flex items-center">
+            <ThemeToggle />
+          </nav>
+        </div>
       </div>
     </header>
   );

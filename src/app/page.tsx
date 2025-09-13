@@ -150,7 +150,7 @@ export default function Home() {
     <div className="flex min-h-screen w-full flex-col bg-background">
       <Header />
       <main className="flex-1">
-        <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8 max-w-7xl">
           <div className="mb-8 flex flex-col sm:flex-row gap-4 items-center">
             <ImageUploadDialog onImagesUploaded={handleImagesUploaded}>
                 <Button>
