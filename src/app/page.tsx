@@ -22,11 +22,14 @@ import {
   TableCell,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { ImageViewer } from '@/components/image-viewer';
 
 export default function Home() {
   const [images, setImages] = useState<StoredImage[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [date, setDate] = useState<Date | undefined>();
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
 
   const handleImagesUploaded = (uploadedImages: StoredImage[]) => {
     setImages((prevImages) => [...uploadedImages, ...prevImages]);
@@ -89,6 +92,12 @@ export default function Home() {
     setSearchQuery('');
     setDate(undefined);
   }
+  
+  const currentImage = useMemo(() => {
+    if (!selectedImage) return null;
+    const allImages = images;
+    return allImages.find(img => img.id === selectedImage) || null;
+  }, [selectedImage, images]);
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
@@ -158,14 +167,15 @@ export default function Home() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {group.images.map(image => (
-                            <Image
-                              key={image.id}
-                              src={image.src}
-                              alt={image.alt}
-                              width={40}
-                              height={40}
-                              className="rounded-md object-cover"
-                            />
+                            <button key={image.id} onClick={() => setSelectedImage(image.id)} className="focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md">
+                              <Image
+                                src={image.src}
+                                alt={image.alt}
+                                width={40}
+                                height={40}
+                                className="rounded-md object-cover cursor-pointer"
+                              />
+                            </button>
                           ))}
                         </div>
                       </TableCell>
@@ -191,6 +201,15 @@ export default function Home() {
           )}
         </div>
       </main>
+      
+      {currentImage && (
+        <ImageViewer
+          src={currentImage.src}
+          alt={currentImage.alt}
+          isOpen={!!selectedImage}
+          onOpenChange={(open) => !open && setSelectedImage(null)}
+        />
+      )}
     </div>
   );
 }
