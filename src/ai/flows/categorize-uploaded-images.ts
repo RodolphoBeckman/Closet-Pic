@@ -23,6 +23,11 @@ const CategorizeImageInputSchema = z.object({
 export type CategorizeImageInput = z.infer<typeof CategorizeImageInputSchema>;
 
 const CategorizeImageOutputSchema = z.object({
+  referencia: z.string().describe('The reference number of the item in the image.'),
+  marca: z.string().describe('The brand of the item in the image.'),
+  dia: z.string().describe('The day the item was registered.'),
+  mes: z.string().describe('The month the item was registered.'),
+  ano: z.string().describe('The year the item was registered.'),
   category: z.string().describe('The category of the image.'),
 });
 
@@ -36,7 +41,7 @@ const categorizeImagePrompt = ai.definePrompt({
   name: 'categorizeImagePrompt',
   input: {schema: CategorizeImageInputSchema},
   output: {schema: CategorizeImageOutputSchema},
-  prompt: `You are an AI that categorizes images.  Given an image, determine the most appropriate category for it.  Respond only with the name of the category.
+  prompt: `You are an AI that extracts information from images. Given an image, extract the following fields: referencia, marca, dia, mes, and ano from any text in the image. Also provide a category for the image.
 
 Image: {{media url=photoDataUri}}`,
 });

@@ -74,7 +74,7 @@ export function ImageUploadDialog({ onImageUploaded, children }: ImageUploadDial
     }
 
     startTransition(async () => {
-      const { category, error } = await getCategoryForImage(previewUrl);
+      const { category, referencia, marca, dia, mes, ano, error } = await getCategoryForImage(previewUrl);
 
       if (error || !category) {
         toast({
@@ -90,6 +90,11 @@ export function ImageUploadDialog({ onImageUploaded, children }: ImageUploadDial
         src: previewUrl,
         category,
         alt: file.name,
+        referencia: referencia || undefined,
+        marca: marca || undefined,
+        dia: dia || undefined,
+        mes: mes || undefined,
+        ano: ano || undefined,
       });
 
       toast({
