@@ -9,4 +9,5 @@ export interface StoredImage {
   dia?: string;
   mes?: string;
   ano?: string;
+  dataRegistrada?: string;
 }

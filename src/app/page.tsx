@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { FileImage, Upload } from 'lucide-react';
 import Header from '@/components/header';
 import { ImageUploadDialog } from '@/components/image-upload-dialog';
-import ImageCard from '@/components/image-card';
 import type { StoredImage } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -13,6 +13,15 @@ import { CalendarIcon } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 
 export default function Home() {
   const [images, setImages] = useState<StoredImage[]>([]);
@@ -103,10 +112,41 @@ export default function Home() {
               )}
           </div>
           {filteredImages.length > 0 ? (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-              {filteredImages.map((image) => (
-                <ImageCard key={image.id} image={image} />
-              ))}
+            <div className="rounded-lg border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Referência</TableHead>
+                    <TableHead>Marca</TableHead>
+                    <TableHead>Foto</TableHead>
+                    <TableHead>Data registrada</TableHead>
+                    <TableHead>Dia</TableHead>
+                    <TableHead>Mês</TableHead>
+                    <TableHead>Ano</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredImages.map((image) => (
+                    <TableRow key={image.id}>
+                      <TableCell>{image.referencia || '-'}</TableCell>
+                      <TableCell><Badge variant="outline">{image.marca || '-'}</Badge></TableCell>
+                      <TableCell>
+                        <Image
+                          src={image.src}
+                          alt={image.alt}
+                          width={40}
+                          height={40}
+                          className="rounded-md object-cover"
+                        />
+                      </TableCell>
+                      <TableCell>{image.dataRegistrada || '-'}</TableCell>
+                      <TableCell>{image.dia || '-'}</TableCell>
+                      <TableCell className="capitalize">{image.mes || '-'}</TableCell>
+                      <TableCell>{image.ano || '-'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 py-24 text-center mt-8">

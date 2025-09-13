@@ -97,6 +97,7 @@ export function ImageUploadDialog({ onImagesUploaded, children }: ImageUploadDia
     const dia = format(today, 'dd');
     const mes = format(today, 'LLLL', { locale: ptBR }); // Full month name in Portuguese
     const ano = format(today, 'yyyy');
+    const dataRegistrada = format(today, "dd 'de' MMMM 'de' yyyy HH:mm", { locale: ptBR });
 
     startTransition(() => {
       const uploadedImages: StoredImage[] = files.map(({ file, previewUrl }) => ({
@@ -109,6 +110,7 @@ export function ImageUploadDialog({ onImagesUploaded, children }: ImageUploadDia
         dia,
         mes,
         ano,
+        dataRegistrada,
       }));
       
       onImagesUploaded(uploadedImages);
