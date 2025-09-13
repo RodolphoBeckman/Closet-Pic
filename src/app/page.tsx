@@ -148,70 +148,69 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
-      <Header>
-        <ImageUploadDialog onImagesUploaded={handleImagesUploaded}>
-          <Button>
-            <Upload className="mr-2 h-4 w-4" />
-            Upload Images
-          </Button>
-        </ImageUploadDialog>
-      </Header>
+      <Header />
       <main className="flex-1">
         <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
           <div className="mb-8 flex flex-col sm:flex-row gap-4 items-center">
-              <Input
-                type="search"
-                placeholder="Filtrar por marca ou referência..."
-                className="w-full sm:max-w-xs"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-full sm:max-w-xs justify-start text-left font-normal",
-                      !dateRange && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateRange?.from ? (
-                      dateRange.to ? (
-                        <>
-                          {format(dateRange.from, "LLL dd, y")} -{" "}
-                          {format(dateRange.to, "LLL dd, y")}
-                        </>
-                      ) : (
-                        format(dateRange.from, "LLL dd, y")
-                      )
+            <ImageUploadDialog onImagesUploaded={handleImagesUploaded}>
+                <Button>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload Images
+                </Button>
+            </ImageUploadDialog>
+            <Input
+            type="search"
+            placeholder="Filtrar por marca ou referência..."
+            className="w-full sm:max-w-xs"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <Popover>
+            <PopoverTrigger asChild>
+                <Button
+                variant={"outline"}
+                className={cn(
+                    "w-full sm:max-w-xs justify-start text-left font-normal",
+                    !dateRange && "text-muted-foreground"
+                )}
+                >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {dateRange?.from ? (
+                    dateRange.to ? (
+                    <>
+                        {format(dateRange.from, "LLL dd, y")} -{" "}
+                        {format(dateRange.to, "LLL dd, y")}
+                    </>
                     ) : (
-                      <span>Filtrar por data</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="range"
-                    selected={dateRange}
-                    onSelect={setDateRange}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-               {(searchQuery || dateRange) && (
-                <Button variant="ghost" onClick={clearFilters}>Limpar filtros</Button>
-              )}
-              <div className="flex items-center gap-2 ml-auto">
-                <Button variant={viewMode === 'table' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('table')}>
-                  <List className="h-5 w-5" />
-                  <span className="sr-only">Table View</span>
+                    format(dateRange.from, "LLL dd, y")
+                    )
+                ) : (
+                    <span>Filtrar por data</span>
+                )}
                 </Button>
-                <Button variant={viewMode === 'gallery' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('gallery')}>
-                  <LayoutGrid className="h-5 w-5" />
-                  <span className="sr-only">Gallery View</span>
-                </Button>
-              </div>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+                <Calendar
+                mode="range"
+                selected={dateRange}
+                onSelect={setDateRange}
+                initialFocus
+                />
+            </PopoverContent>
+            </Popover>
+            {(searchQuery || dateRange) && (
+            <Button variant="ghost" onClick={clearFilters}>Limpar filtros</Button>
+            )}
+            <div className="flex items-center gap-2 ml-auto">
+            <Button variant={viewMode === 'table' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('table')}>
+                <List className="h-5 w-5" />
+                <span className="sr-only">Table View</span>
+            </Button>
+            <Button variant={viewMode === 'gallery' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('gallery')}>
+                <LayoutGrid className="h-5 w-5" />
+                <span className="sr-only">Gallery View</span>
+            </Button>
+            </div>
           </div>
           {!noResults ? (
             viewMode === 'table' ? (
@@ -288,5 +287,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
