@@ -9,8 +9,8 @@ export default function Header() {
       <div className="container flex h-14 max-w-screen-2xl items-center">
         <div className="mr-4 hidden md:flex">
           <a href="/" className="flex items-center space-x-2">
-            <Camera className="h-6 w-6 text-primary" />
-            <span className="font-bold sm:inline-block">ImageKeep</span>
+            <Camera className="h-6 w-6 bg-gradient-to-r from-primary to-purple-500 text-transparent bg-clip-text" />
+            <span className="font-bold sm:inline-block bg-gradient-to-r from-primary to-purple-500 text-transparent bg-clip-text drop-shadow-[0_0_0.3rem_#ffffff40]">ImageKeep</span>
           </a>
         </div>
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
