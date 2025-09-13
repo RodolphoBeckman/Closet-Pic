@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, UploadCloud, FileImage, Files, X } from 'lucide-react';
+import { Loader2, UploadCloud, Files, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { StoredImage } from '@/types';
 import { ScrollArea } from './ui/scroll-area';
@@ -29,13 +29,13 @@ type ImageUploadDialogProps = {
 interface UploadFile {
   file: File;
   previewUrl: string;
-  referencia: string;
-  marca: string;
 }
 
 export function ImageUploadDialog({ onImagesUploaded, children }: ImageUploadDialogProps) {
   const [open, setOpen] = useState(false);
   const [files, setFiles] = useState<UploadFile[]>([]);
+  const [referencia, setReferencia] = useState('');
+  const [marca, setMarca] = useState('');
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
@@ -52,7 +52,7 @@ export function ImageUploadDialog({ onImagesUploaded, children }: ImageUploadDia
         }
         const reader = new FileReader();
         reader.onloadend = () => {
-          newFiles.push({ file, previewUrl: reader.result as string, referencia: '', marca: '' });
+          newFiles.push({ file, previewUrl: reader.result as string });
           // If all files are processed
           if (newFiles.length + validationErrors.length === selectedFiles.length) {
             setFiles(prev => [...prev, ...newFiles]);
@@ -70,14 +70,10 @@ export function ImageUploadDialog({ onImagesUploaded, children }: ImageUploadDia
     }
   };
 
-  const handleFieldChange = (index: number, field: 'referencia' | 'marca', value: string) => {
-    const updatedFiles = [...files];
-    updatedFiles[index][field] = value;
-    setFiles(updatedFiles);
-  };
-
   const resetState = () => {
     setFiles([]);
+    setReferencia('');
+    setMarca('');
   }
 
   const handleOpenChange = (isOpen: boolean) => {
@@ -103,7 +99,7 @@ export function ImageUploadDialog({ onImagesUploaded, children }: ImageUploadDia
     const ano = format(today, 'yyyy');
 
     startTransition(() => {
-      const uploadedImages: StoredImage[] = files.map(({ file, previewUrl, referencia, marca }) => ({
+      const uploadedImages: StoredImage[] = files.map(({ file, previewUrl }) => ({
         id: `${new Date().toISOString()}-${file.name}`,
         src: previewUrl,
         category: 'default',
@@ -136,38 +132,35 @@ export function ImageUploadDialog({ onImagesUploaded, children }: ImageUploadDia
         <DialogHeader>
           <DialogTitle>Upload de Imagens</DialogTitle>
           <DialogDescription>
-            Adicione as informações para cada imagem. A data será preenchida automaticamente.
+            Adicione as informações para o grupo de imagens. A data será preenchida automaticamente.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           {files.length > 0 ? (
-            <div className="space-y-4">
-               <ScrollArea className="h-96 w-full pr-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {files.map(({file, previewUrl}, index) => (
-                    <div key={file.name} className="relative group border rounded-lg p-4 space-y-4">
+             <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="referencia-geral">Referência</Label>
+                  <Input id="referencia-geral" placeholder="Ex: 04199-A" value={referencia} onChange={(e) => setReferencia(e.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="marca-geral">Marca</Label>
+                  <Input id="marca-geral" placeholder="Ex: Nike" value={marca} onChange={(e) => setMarca(e.target.value)} />
+                </div>
+              </div>
+               <ScrollArea className="h-80 w-full pr-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {files.map(({file, previewUrl}) => (
+                    <div key={file.name} className="relative group aspect-square">
                        <Button
                         variant="destructive"
                         size="icon"
-                        className="absolute top-2 right-2 h-6 w-6 opacity-20 group-hover:opacity-100 transition-opacity"
+                        className="absolute top-1 right-1 h-6 w-6 opacity-20 group-hover:opacity-100 transition-opacity z-10"
                         onClick={() => removeFile(file.name)}
                       >
                         <X className="h-4 w-4" />
                       </Button>
-                      <div className='flex items-start gap-4'>
-                        <Image src={previewUrl} alt={file.name} width={100} height={100} className="rounded-md object-cover aspect-square" />
-                        <div className="w-full space-y-2">
-                           <p className="text-sm font-medium text-muted-foreground truncate">{file.name}</p>
-                           <div>
-                            <Label htmlFor={`referencia-${index}`} className='text-xs'>Referência</Label>
-                            <Input id={`referencia-${index}`} placeholder="Ex: 04199-A" onChange={(e) => handleFieldChange(index, 'referencia', e.target.value)} />
-                          </div>
-                          <div>
-                            <Label htmlFor={`marca-${index}`} className='text-xs'>Marca</Label>
-                            <Input id={`marca-${index}`} placeholder="Ex: Nike" onChange={(e) => handleFieldChange(index, 'marca', e.target.value)} />
-                          </div>
-                        </div>
-                      </div>
+                      <Image src={previewUrl} alt={file.name} fill sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw" className="rounded-md object-cover" />
                     </div>
                   ))}
                 </div>
