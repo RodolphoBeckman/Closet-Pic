@@ -144,35 +144,8 @@ export default function Home() {
     return allImages.find(img => img.id === selectedImage) || null;
   }, [selectedImage, images]);
 
-  const noResults = images.length > 0 && (viewMode === 'table' ? tableGroupedImages.length === 0 : galleryGroupedImages.length === 0);
-
-  if (images.length === 0) {
-    return (
-      <div className="flex min-h-screen w-full flex-col bg-gradient-to-br from-background-start to-background-end">
-        <Header />
-        <main className="flex-1 flex items-center justify-center p-4">
-          <div className="w-full max-w-xl text-center">
-            <ImageUploadDialog onImagesUploaded={handleImagesUploaded}>
-              <div className="bg-card/50 backdrop-blur-sm border-2 border-dashed border-primary/30 rounded-2xl p-8 sm:p-12 text-center cursor-pointer hover:border-primary/50 hover:bg-card/60 transition-all duration-300 shadow-lg">
-                <div className="flex justify-center items-center">
-                  <div className="p-4 rounded-full bg-primary/10 mb-4 inline-block">
-                    <Upload className="h-10 w-10 text-primary" />
-                  </div>
-                </div>
-                <p className="text-lg font-semibold text-foreground">
-                  Arraste, cole, ou{' '}
-                  <span className="text-primary underline">clique para escanear</span>
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Comece enviando algumas imagens para a sua galeria.
-                </p>
-              </div>
-            </ImageUploadDialog>
-          </div>
-        </main>
-      </div>
-    );
-  }
+  const noImages = images.length === 0;
+  const noFilteredResults = !noImages && filteredImages.length === 0;
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-gradient-to-br from-background-start to-background-end">
@@ -240,8 +213,31 @@ export default function Home() {
             </Button>
             </div>
           </div>
-          {!noResults ? (
-            viewMode === 'table' ? (
+          {noImages ? (
+             <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 py-24 text-center mt-8">
+                <div className="flex justify-center items-center">
+                  <div className="p-4 rounded-full bg-primary/10 mb-4 inline-block">
+                    <Upload className="h-10 w-10 text-primary" />
+                  </div>
+                </div>
+                <h2 className="mt-2 text-xl font-semibold tracking-tight text-foreground">
+                    Comece a fazer uploads
+                </h2>
+                <p className="mt-2 text-muted-foreground">
+                    Clique em "Upload Images" para adicionar suas primeiras fotos.
+                </p>
+             </div>
+          ) : noFilteredResults ? (
+            <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 py-24 text-center mt-8">
+              <FileImage className="h-16 w-16 text-muted-foreground/50" />
+              <h2 className="mt-6 text-xl font-semibold tracking-tight text-foreground">
+                Nenhuma imagem encontrada
+              </h2>
+              <p className="mt-2 text-muted-foreground">
+                 Tente um filtro diferente ou limpe a seleção.
+              </p>
+            </div>
+          ) : viewMode === 'table' ? (
               <div className="rounded-lg border">
                 <Table>
                   <TableHeader>
@@ -289,18 +285,7 @@ export default function Home() {
                     imageGroups={galleryGroupedImages}
                     onImageClick={(id) => setSelectedImage(id)}
                 />
-            )
-          ) : (
-            <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 py-24 text-center mt-8">
-              <FileImage className="h-16 w-16 text-muted-foreground/50" />
-              <h2 className="mt-6 text-xl font-semibold tracking-tight text-foreground">
-                Nenhuma imagem encontrada
-              </h2>
-              <p className="mt-2 text-muted-foreground">
-                 Tente um filtro diferente ou limpe a seleção.
-              </p>
-            </div>
-          )}
+            )}
         </div>
       </main>
       
