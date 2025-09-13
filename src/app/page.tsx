@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { FileImage, Upload, LayoutGrid, List } from 'lucide-react';
 import Header from '@/components/header';
 import { ImageUploadDialog } from '@/components/image-upload-dialog';
-import type { StoredImage, GroupedImage } from '@/types';
+import type { StoredImage, GroupedImage, GalleryGroupedImage } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
@@ -32,19 +32,53 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [date, setDate] = useState<Date | undefined>();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>('table');
+  const [viewMode, setViewMode] = useState<ViewMode>('gallery');
 
 
   const handleImagesUploaded = (uploadedImages: StoredImage[]) => {
     setImages((prevImages) => [...uploadedImages, ...prevImages]);
   };
 
-  const groupedAndFilteredImages = useMemo(() => {
-    // 1. Group images by referencia
-    const grouped: { [key: string]: GroupedImage } = images.reduce((acc, image) => {
+  const filteredImages = useMemo(() => {
+    let filtered = images;
+    if (searchQuery) {
+        filtered = filtered.filter((image) =>
+            image.marca?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            image.referencia?.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }
+    if (date) {
+        const formattedDate = format(date, 'dd/MM/yyyy');
+        filtered = filtered.filter((image) => {
+            if (!image.dia || !image.mes || !image.ano) return false;
+            const monthNames: { [key: string]: string } = {
+                'janeiro': '01', 'fevereiro': '02', 'março': '03', 'abril': '04',
+                'maio': '05', 'junho': '06', 'julho': '07', 'agosto': '08',
+                'setembro': '09', 'outubro': '10', 'novembro': '11', 'dezembro': '12'
+            };
+            const imageMonth = monthNames[image.mes.toLowerCase()];
+            const imageDateStr = `${image.dia}/${imageMonth}/${image.ano}`;
+            return imageDateStr === formattedDate;
+        });
+    }
+
+    // Sort by most recent
+    filtered.sort((a, b) => {
+      const dateA = a.dataRegistrada ? new Date(a.dataRegistrada.replace(/(\d{2}) de (\w+) de (\d{4}) (\d{2}:\d{2})/, '$2 $1, $3 $4')).getTime() : 0;
+      const dateB = b.dataRegistrada ? new Date(b.dataRegistrada.replace(/(\d{2}) de (\w+) de (\d{4}) (\d{2}:\d{2})/, '$2 $1, $3 $4')).getTime() : 0;
+      return dateB - dateA;
+    });
+
+    return filtered;
+  }, [images, searchQuery, date]);
+
+
+  const tableGroupedImages: GroupedImage[] = useMemo(() => {
+    const grouped: { [key: string]: GroupedImage } = filteredImages.reduce((acc, image) => {
       const ref = image.referencia || 'sem-referencia';
       if (!acc[ref]) {
         acc[ref] = {
+          groupKey: ref,
           referencia: image.referencia || '-',
           marca: image.marca,
           dia: image.dia,
@@ -58,40 +92,42 @@ export default function Home() {
       return acc;
     }, {} as { [key: string]: GroupedImage });
 
-    let filteredGroups = Object.values(grouped);
+    return Object.values(grouped);
+  }, [filteredImages]);
 
-    // 2. Filter the groups
-    if (searchQuery) {
-      filteredGroups = filteredGroups.filter((group) =>
-        group.marca?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    if (date) {
-      const formattedDate = format(date, 'dd/MM/yyyy');
-      filteredGroups = filteredGroups.filter((group) => {
-        if (!group.dia || !group.mes || !group.ano) return false;
-        const monthNames: { [key: string]: string } = {
-          'janeiro': '01', 'fevereiro': '02', 'março': '03', 'abril': '04',
-          'maio': '05', 'junho': '06', 'julho': '07', 'agosto': '08',
-          'setembro': '09', 'outubro': '10', 'novembro': '11', 'dezembro': '12'
+  const galleryGroupedImages: GalleryGroupedImage[] = useMemo(() => {
+    const groupedByMarca: { [key: string]: { marca: string, references: { [key:string]: GroupedImage } } } = filteredImages.reduce((acc, image) => {
+      const marca = image.marca || 'sem-marca';
+      if (!acc[marca]) {
+        acc[marca] = {
+          marca: image.marca || '-',
+          references: {}
         };
-        const imageMonth = monthNames[group.mes.toLowerCase()];
-        const imageDateStr = `${group.dia}/${imageMonth}/${group.ano}`;
-        return imageDateStr === formattedDate;
-      });
-    }
-    
-    // Sort by most recent
-    filteredGroups.sort((a, b) => {
-      const dateA = new Date(`${a.ano}-${a.mes}-${a.dia} ${a.dataRegistrada?.split(' ')[3] || '00:00'}`).getTime();
-      const dateB = new Date(`${b.ano}-${b.mes}-${b.dia} ${b.dataRegistrada?.split(' ')[3] || '00:00'}`).getTime();
-      return (b.dataRegistrada ? new Date(b.dataRegistrada).getTime() : 0) - (a.dataRegistrada ? new Date(a.dataRegistrada).getTime() : 0);
-    });
+      }
+      
+      const ref = image.referencia || 'sem-referencia';
+      if (!acc[marca].references[ref]) {
+          acc[marca].references[ref] = {
+              groupKey: ref,
+              referencia: image.referencia || '-',
+              marca: image.marca,
+              dia: image.dia,
+              mes: image.mes,
+              ano: image.ano,
+              dataRegistrada: image.dataRegistrada,
+              images: [],
+          };
+      }
+      acc[marca].references[ref].images.push({ id: image.id, src: image.src, alt: image.alt });
+      return acc;
+    }, {} as { [key: string]: { marca: string, references: { [key:string]: GroupedImage } } });
 
-    return filteredGroups;
-  }, [images, searchQuery, date]);
-  
+    return Object.values(groupedByMarca).map(group => ({
+        marca: group.marca,
+        items: Object.values(group.references),
+    }));
+  }, [filteredImages]);
+
   const clearFilters = () => {
     setSearchQuery('');
     setDate(undefined);
@@ -102,6 +138,8 @@ export default function Home() {
     const allImages = images;
     return allImages.find(img => img.id === selectedImage) || null;
   }, [selectedImage, images]);
+
+  const noResults = viewMode === 'table' ? tableGroupedImages.length === 0 : galleryGroupedImages.length === 0;
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
@@ -118,7 +156,7 @@ export default function Home() {
           <div className="mb-8 flex flex-col sm:flex-row gap-4 items-center">
               <Input
                 type="search"
-                placeholder="Filtrar por marca..."
+                placeholder="Filtrar por marca ou referência..."
                 className="w-full sm:max-w-xs"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -159,7 +197,7 @@ export default function Home() {
                 </Button>
               </div>
           </div>
-          {groupedAndFilteredImages.length > 0 ? (
+          {!noResults ? (
             viewMode === 'table' ? (
               <div className="rounded-lg border">
                 <Table>
@@ -175,8 +213,8 @@ export default function Home() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {groupedAndFilteredImages.map((group) => (
-                      <TableRow key={group.referencia}>
+                    {tableGroupedImages.map((group) => (
+                      <TableRow key={group.groupKey}>
                         <TableCell>{group.referencia}</TableCell>
                         <TableCell><Badge variant="outline">{group.marca || '-'}</Badge></TableCell>
                         <TableCell>
@@ -205,7 +243,7 @@ export default function Home() {
               </div>
             ) : (
                 <GalleryView
-                    imageGroups={groupedAndFilteredImages}
+                    imageGroups={galleryGroupedImages}
                     onImageClick={(id) => setSelectedImage(id)}
                 />
             )

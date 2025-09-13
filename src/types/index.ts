@@ -13,6 +13,7 @@ export interface StoredImage {
 }
 
 export interface GroupedImage {
+  groupKey: string;
   referencia: string;
   marca?: string;
   dia?: string;
@@ -24,4 +25,9 @@ export interface GroupedImage {
     src: string;
     alt: string;
   }[];
+}
+
+export interface GalleryGroupedImage {
+    marca: string;
+    items: GroupedImage[];
 }
