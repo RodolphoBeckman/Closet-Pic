@@ -1,4 +1,18 @@
-import { config } from 'dotenv';
+import {config} from 'dotenv';
 config();
 
-import '@/ai/flows/categorize-uploaded-images.ts';
+import {dev} from 'genkit';
+import {categorizeImageFlow} from './flows/categorize-uploaded-images';
+
+dev({
+  flows: [
+    {
+      name: categorizeImageFlow,
+      response: {
+        referencia: 'REF123',
+        marca: 'Marca Exemplo',
+        category: 'Exemplo',
+      },
+    },
+  ],
+});
