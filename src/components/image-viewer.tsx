@@ -6,6 +6,9 @@ import {
   Dialog,
   DialogContent,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Download } from 'lucide-react';
 
@@ -30,6 +33,10 @@ export function ImageViewer({ src, alt, isOpen, onOpenChange }: ImageViewerProps
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl p-0">
+        <DialogHeader className="sr-only">
+          <DialogTitle>Visualizador de Imagem</DialogTitle>
+          <DialogDescription>Veja a imagem em tamanho maior e faça o download.</DialogDescription>
+        </DialogHeader>
         <div className="relative aspect-video w-full">
             <Image 
                 src={src} 
@@ -38,7 +45,7 @@ export function ImageViewer({ src, alt, isOpen, onOpenChange }: ImageViewerProps
                 className="object-contain"
             />
         </div>
-        <DialogFooter className="p-4 bg-background/80 backdrop-blur-sm">
+        <DialogFooter className="p-4 bg-background/80 backdrop-blur-sm sm:justify-start">
           <Button onClick={handleDownload}>
             <Download className="mr-2 h-4 w-4" />
             Download
