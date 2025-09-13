@@ -1,21 +1,38 @@
+'use client';
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from '@/components/theme-provider';
+import { useEffect } from 'react';
 
-export const metadata: Metadata = {
-  title: 'ClosetPic',
-  description: 'Upload, categorize, and search your images.',
-};
+// export const metadata: Metadata = {
+//   title: 'ClosetPic',
+//   description: 'Upload, categorize, and search your images.',
+// };
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      document.body.style.setProperty('--mouse-x', `${e.clientX}px`);
+      document.body.style.setProperty('--mouse-y', `${e.clientY}px`);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <title>ClosetPic</title>
+        <meta name="description" content="Upload, categorize, and search your images." />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet" />
