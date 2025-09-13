@@ -15,7 +15,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getCategoryForImage } from '@/app/actions';
-import { Loader2, UploadCloud, FileImage, Files } from 'lucide-react';
+import { Loader2, UploadCloud, FileImage, Files, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { StoredImage } from '@/types';
 import { ScrollArea } from './ui/scroll-area';
