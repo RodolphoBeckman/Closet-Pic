@@ -13,7 +13,7 @@ interface BaserowFileMetadata {
     uploaded_at: string;
 }
 
-export const getBaserowConfig = () => {
+export async function getBaserowConfig() {
     const apiUrl = process.env.URL_API_BASEROW;
     const apiKey = process.env.CHAVE_API_BASEROW;
     const tableId = process.env.ID_DA_TABELA_BASEROW;
@@ -38,7 +38,7 @@ export const getBaserowConfig = () => {
 export async function uploadFile(
   file: File,
 ): Promise<BaserowFileMetadata> {
-  const { apiUrl, apiKey } = getBaserowConfig();
+  const { apiUrl, apiKey } = await getBaserowConfig();
   const formData = new FormData();
   formData.append('file', file);
   
@@ -63,7 +63,7 @@ export async function uploadFile(
 
 // Generic function to create a row in any table
 export async function createRowInTable(tableId: string, rowData: Record<string, any>): Promise<any> {
-    const { apiUrl, apiKey } = getBaserowConfig();
+    const { apiUrl, apiKey } = await getBaserowConfig();
     const createRowUrl = new URL(`/api/database/rows/table/${tableId}/?user_field_names=true`, apiUrl).toString();
 
     const response = await fetch(createRowUrl, {
@@ -91,7 +91,7 @@ export async function createRowInTable(tableId: string, rowData: Record<string, 
 export async function createRow(
   rowData: Record<string, any>,
 ): Promise<any> {
-  const { tableId } = getBaserowConfig();
+  const { tableId } = await getBaserowConfig();
   if(!tableId) throw new Error("ID da tabela de imagens (ID_DA_TABELA_BASEROW) não configurado.");
   return createRowInTable(tableId, rowData);
 }
@@ -100,7 +100,7 @@ export async function createRow(
  * Lists all rows from the main images table.
  */
 export async function listRows(): Promise<any> {
-  const { apiUrl, apiKey, tableId } = getBaserowConfig();
+  const { apiUrl, apiKey, tableId } = await getBaserowConfig();
   if(!tableId) throw new Error("ID da tabela de imagens (ID_DA_TABELA_BASEROW) não configurado.");
   const listRowsUrl = new URL(`/api/database/rows/table/${tableId}/?user_field_names=true`, apiUrl).toString();
 
@@ -135,7 +135,7 @@ export async function listRows(): Promise<any> {
  * Finds a user by their email address.
  */
 export async function findUserByEmail(email: string): Promise<BaserowUser | null> {
-    const { apiUrl, apiKey, usersTableId } = getBaserowConfig();
+    const { apiUrl, apiKey, usersTableId } = await getBaserowConfig();
     if (!usersTableId) throw new Error("ID da tabela de usuários (ID_DA_TABELA_USERS_BASEROW) não configurado.");
     
     const url = new URL(`/api/database/rows/table/${usersTableId}/`, apiUrl);

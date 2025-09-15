@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     const now = new Date().toISOString();
     
     // Get users table ID securely
-    const { usersTableId } = getBaserowConfig();
+    const { usersTableId } = await getBaserowConfig();
      if (!usersTableId) {
       throw new Error("ID da tabela de usuários não configurado no ambiente.");
     }
