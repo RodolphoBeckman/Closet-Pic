@@ -8,7 +8,7 @@ Para configurar a autenticação no seu aplicativo, crie uma nova tabela no seu 
 
 | Nome do Campo | Tipo no Baserow | Formato/Opções                                             | Exemplo de Valor                      | Notas                                                                   |
 | :------------ | :-------------- | :--------------------------------------------------------- | :------------------------------------ | :---------------------------------------------------------------------- |
-| **id**        | `UUID`          | -                                                          | `123e4567-e89b-12d3-a456-426614174000` | **(Campo Primário)** Use o tipo UUID para garantir um ID único.         |
+| **EU IA**     | `Text`          | -                                                          | `user_1722196800000`                  | **(Campo Primário)** Identificador único para o usuário.                |
 | **email**     | `Email`         | -                                                          | `usuario@exemplo.com`                 | O endereço de e-mail do usuário. Será usado para o login.               |
 | **password**  | `Text`          | -                                                          | `senha_criptografada_aqui`            | Armazenará a senha do usuário após ser criptografada (hashed).          |
 | **name**      | `Text`          | -                                                          | `Nome do Usuário`                     | O nome de exibição do usuário.                                          |
@@ -17,8 +17,8 @@ Para configurar a autenticação no seu aplicativo, crie uma nova tabela no seu 
 
 ## Instruções Importantes
 
-1.  **Nomes dos Campos:** É **crucial** que os nomes dos campos na sua tabela Baserow sejam **exatamente** como listados acima (`id`, `email`, `password`, `name`, `created_at`). O código que implementaremos dependerá desses nomes.
-2.  **Campo Primário:** Defina o campo **`id`** como o campo primário (`Primary Field`) da sua tabela e certifique-se de que o tipo dele seja `UUID`.
+1.  **Nomes dos Campos:** É **crucial** que os nomes dos campos na sua tabela Baserow sejam **exatamente** como listados acima (`EU IA`, `email`, `password`, `name`, `created_at`). O código que implementaremos dependerá desses nomes.
+2.  **Campo Primário:** Defina o campo **`EU IA`** como o campo primário (`Primary Field`) da sua tabela.
 3.  **Campo de Data:** No campo `created_at`, certifique-se de habilitar a opção **"Include time"**.
 
 Com esta tabela criada, seu banco de dados estará pronto para gerenciarmos os usuários do ClosetPic. O próximo passo será construir as telas de login e registro no aplicativo.
