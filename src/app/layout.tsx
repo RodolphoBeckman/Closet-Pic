@@ -14,9 +14,7 @@ import { usePathname, useRouter } from 'next/navigation';
 //   description: 'Upload, categorize, and search your images.',
 // };
 
-const protectedRoutes = ['/'];
-const publicRoutes = ['/login', '/register'];
-
+// A lógica de proteção de rotas foi movida para o middleware.ts
 
 export default function RootLayout({
   children,
@@ -24,10 +22,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const [user, setUser] = useState<UserSession | null>(null);
-  const [loadingSession, setLoadingSession] = useState(true);
+  const [loading, setLoading] = useState(true);
   const pathname = usePathname();
-  const router = useRouter();
-
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -40,64 +36,39 @@ export default function RootLayout({
     };
   }, []);
 
-  // Effect to check session status on initial load and on navigation
+  // Busca os dados da sessão para exibir no Header, mas não lida mais com redirecionamentos.
   useEffect(() => {
-    let isMounted = true;
-    
-    async function checkSession() {
-      setLoadingSession(true);
+    async function fetchSession() {
       try {
         const response = await fetch('/api/auth/session');
-        const data = await response.json();
-        if (isMounted) {
+        if (response.ok) {
+          const data = await response.json();
           setUser(data.session || null);
+        } else {
+           setUser(null);
         }
       } catch (error) {
         console.error("Failed to fetch session:", error);
-        if (isMounted) {
-          setUser(null);
-        }
+        setUser(null);
       } finally {
-        if (isMounted) {
-          setLoadingSession(false);
-        }
+        setLoading(false);
       }
     }
-    checkSession();
-    
-    return () => {
-      isMounted = false;
-    };
-  }, [pathname]); // Re-check session on pathname change
-
-  // Effect to handle routing logic after session state is determined
-  useEffect(() => {
-    // Wait until the session check is complete
-    if (loadingSession) {
-      return;
-    }
-
-    const isProtectedRoute = protectedRoutes.includes(pathname);
-    const isPublicRoute = publicRoutes.includes(pathname);
-
-    // If user is on a protected route and is not logged in, redirect to login
-    if (isProtectedRoute && !user) {
-      router.push('/login');
-    } 
-    // If user is on a public route and is logged in, redirect to home
-    else if (isPublicRoute && user) {
-      router.push('/');
-    }
-
-  }, [pathname, user, loadingSession, router]);
+    fetchSession();
+  }, [pathname]); // Re-fetches a sessão quando a rota muda
 
 
-  if (loadingSession) {
-    return (
+  // O middleware agora lida com o redirecionamento de usuários logados/deslogados.
+  // Este layout não precisa mais dessa lógica.
+
+  // Renderiza um loader enquanto a sessão está sendo verificada
+  const isPublicPage = ['/login', '/register'].includes(pathname);
+  if (loading && !isPublicPage) {
+     return (
        <html lang="en" suppressHydrationWarning>
         <body>
           <div className="flex items-center justify-center min-h-screen">
-            {/* You can add a more sophisticated loader here */}
+            {/* Um loader simples pode ser exibido aqui */}
           </div>
         </body>
       </html>
@@ -133,7 +104,8 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <Header user={user} />
+          {/* O Header só será exibido se não for uma página pública, para não aparecer na tela de login */}
+          {!isPublicPage && <Header user={user} />}
           {children}
           <Toaster />
         </ThemeProvider>

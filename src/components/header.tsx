@@ -16,12 +16,9 @@ import { LogOut, User } from 'lucide-react';
 import { deleteSession } from '@/lib/session';
 import { useRouter } from 'next/navigation';
 
-async function handleLogout() {
-    await deleteSession();
-    window.location.href = '/login';
-}
 
 function getInitials(name: string) {
+    if (!name) return '';
     const names = name.split(' ');
     const first = names[0] ? names[0][0] : '';
     const last = names.length > 1 ? names[names.length - 1][0] : '';
@@ -34,7 +31,9 @@ export default function Header({ user }: { user: UserSession | null }) {
 
   const handleLogout = async () => {
     await deleteSession();
+    // Redireciona para a página de login após o logout
     router.push('/login');
+    router.refresh(); // Garante que o estado seja limpo
   };
 
   return (

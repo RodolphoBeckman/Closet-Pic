@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -39,7 +39,6 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
 
@@ -70,8 +69,10 @@ export default function LoginPage() {
           description: 'Redirecionando...',
         });
 
-        // Force a full page reload to ensure layout gets the new session
-        window.location.href = '/';
+        // A navegação simples é suficiente, o middleware cuidará do resto.
+        router.push('/');
+        // Adicionar um refresh para garantir que o estado do servidor seja atualizado no cliente
+        router.refresh();
 
       } catch (error: any) {
         toast({
