@@ -40,41 +40,64 @@ export default function RootLayout({
     };
   }, []);
 
+  // Effect to check session status on initial load
   useEffect(() => {
     let isMounted = true;
     
     async function checkSession() {
-      const response = await fetch('/api/auth/session');
-      if (!isMounted) return;
-
-      const data = await response.json();
-      const sessionUser = data.session || null;
-      
-      setUser(sessionUser);
-      setLoadingSession(false);
-      
-      const isProtectedRoute = protectedRoutes.includes(pathname);
-      const isPublicRoute = publicRoutes.includes(pathname);
-
-      if (isProtectedRoute && !sessionUser) {
-        router.push('/login');
-      } else if (isPublicRoute && sessionUser) {
-        router.push('/');
+      setLoadingSession(true);
+      try {
+        const response = await fetch('/api/auth/session');
+        const data = await response.json();
+        if (isMounted) {
+          setUser(data.session || null);
+        }
+      } catch (error) {
+        console.error("Failed to fetch session:", error);
+        if (isMounted) {
+          setUser(null);
+        }
+      } finally {
+        if (isMounted) {
+          setLoadingSession(false);
+        }
       }
     }
-
     checkSession();
     
     return () => {
-        isMounted = false;
+      isMounted = false;
+    };
+  }, []);
+
+  // Effect to handle routing logic after session state is determined
+  useEffect(() => {
+    // Wait until the session check is complete
+    if (loadingSession) {
+      return;
     }
-  }, [pathname, router]);
+
+    const isProtectedRoute = protectedRoutes.includes(pathname);
+    const isPublicRoute = publicRoutes.includes(pathname);
+
+    // If user is on a protected route and is not logged in, redirect to login
+    if (isProtectedRoute && !user) {
+      router.push('/login');
+    } 
+    // If user is on a public route and is logged in, redirect to home
+    else if (isPublicRoute && user) {
+      router.push('/');
+    }
+
+  }, [pathname, user, loadingSession, router]);
+
 
   if (loadingSession) {
     return (
        <html lang="en" suppressHydrationWarning>
         <body>
           <div className="flex items-center justify-center min-h-screen">
+            {/* You can add a more sophisticated loader here */}
           </div>
         </body>
       </html>
