@@ -40,7 +40,7 @@ export default function RootLayout({
     };
   }, []);
 
-  // Effect to check session status on initial load
+  // Effect to check session status on initial load and on navigation
   useEffect(() => {
     let isMounted = true;
     
@@ -68,7 +68,7 @@ export default function RootLayout({
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [pathname]); // Re-check session on pathname change
 
   // Effect to handle routing logic after session state is determined
   useEffect(() => {
