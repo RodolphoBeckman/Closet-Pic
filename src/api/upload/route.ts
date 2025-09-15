@@ -19,13 +19,7 @@ export async function POST(req: NextRequest) {
     const mes = formData.get('mes') as string;
     const ano = formData.get('ano') as string;
     const dataRegistrada = formData.get('dataRegistrada') as string;
-    const baserowApiUrl = formData.get('baserowApiUrl') as string;
-    const baserowApiKey = formData.get('baserowApiKey') as string;
-    const baserowTableId = formData.get('baserowTableId') as string;
-
-    if (!baserowApiKey || !baserowTableId || !baserowApiUrl) {
-      return NextResponse.json({ message: 'Baserow API URL, Key or Table ID are missing.' }, { status: 400 });
-    }
+   
 
     if (!files || files.length === 0) {
       return NextResponse.json({ message: 'No files to upload.' }, { status: 400 });
@@ -40,7 +34,7 @@ export async function POST(req: NextRequest) {
     
     // 1. Upload all files to Baserow storage first
     const uploadedFileMetadata = await Promise.all(
-        files.map(file => uploadFile(file, baserowApiKey, baserowApiUrl))
+        files.map(file => uploadFile(file))
     );
     
     // 2. Generate a unique ID for the new row (Baserow Primary Key)
@@ -61,13 +55,14 @@ export async function POST(req: NextRequest) {
       'ALT': files.map(file => file.name).join(', '),
     };
 
-    const newRow = await createRow(rowData, baserowTableId, baserowApiKey, baserowApiUrl);
+    const newRow = await createRow(rowData);
     
-    // Baserow API returns the created row. We'll format it into our StoredImage type for the frontend
-    const responseForFrontend: StoredImage = {
-        id: newRow['EU IA'],
-        src: uploadedFileMetadata[0]?.url, // Assuming at least one image
-        alt: newRow['ALT'],
+    // Baserow API returns the created row. We'll format it into our StoredImage type for the frontend.
+    // Since one upload operation creates one row with possibly multiple images, we now return an array.
+    const responseForFrontend: StoredImage[] = uploadedFileMetadata.map((meta, index) => ({
+        id: `${newRow['EU IA']}-${index}`,
+        src: meta.url, 
+        alt: meta.name,
         referencia: newRow['REFERÊNCIA'],
         marca: newRow['MARCA'],
         dia: String(newRow['DIA']),
@@ -75,12 +70,18 @@ export async function POST(req: NextRequest) {
         ano: String(newRow['ANO']),
         dataRegistrada: newRow['DATA REGISTRADA'],
         category: 'default' // default value
-    };
+    }));
+
 
     return NextResponse.json(responseForFrontend, { status: 201 });
 
-  } catch (error: any) {
+  } catch (error: any)
+   {
     console.error('Upload failed:', error);
+    // Be more specific about the error if it's a config issue
+     if (error.message.includes('variáveis de ambiente')) {
+        return NextResponse.json({ message: error.message }, { status: 400 });
+    }
     return NextResponse.json({ message: 'An error occurred during upload.', details: error.message }, { status: 500 });
   }
 }

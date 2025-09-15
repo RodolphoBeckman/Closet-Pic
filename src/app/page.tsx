@@ -52,7 +52,7 @@ export default function Home() {
         if (!response.ok) {
           const errorData = await response.json();
           // Special check for config error
-          if (response.status === 400 && errorData.message.includes('Baserow environment variables')) {
+          if (response.status === 400 && errorData.message.includes('variáveis de ambiente')) {
              setConfigError(errorData.message);
           } else {
             throw new Error(errorData.message || 'Failed to fetch images.');
@@ -70,6 +70,10 @@ export default function Home() {
             description: error.message || 'Não foi possível buscar as imagens do banco de dados.',
             variant: 'destructive'
         });
+        // Set specific error message for config issues
+        if (error.message.includes('variáveis de ambiente')) {
+            setConfigError(error.message);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -272,7 +276,7 @@ export default function Home() {
               <Settings className="h-4 w-4" />
               <AlertTitle>Erro de Configuração</AlertTitle>
               <AlertDescription>
-                {configError} Por favor, verifique o seu ficheiro `.env` se estiver a correr localmente, ou as suas variáveis de ambiente na sua plataforma de alojamento (ex: Vercel).
+                {configError} Por favor, verifique suas variáveis de ambiente no seu provedor de hospedagem (ex: Vercel) e no seu ficheiro `.env` local.
               </AlertDescription>
             </Alert>
           ) : noImages ? (

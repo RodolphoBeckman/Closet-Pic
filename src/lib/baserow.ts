@@ -13,12 +13,12 @@ interface BaserowFileMetadata {
 }
 
 const getBaserowConfig = () => {
-    const apiUrl = process.env.BASEROW_API_URL;
-    const apiKey = process.env.BASEROW_API_KEY;
-    const tableId = process.env.BASEROW_TABLE_ID;
+    const apiUrl = process.env.URL_API_BASEROW;
+    const apiKey = process.env.CHAVE_API_BASEROW;
+    const tableId = process.env.ID_DA_TABELA_BASEROW;
 
     if (!apiKey || !tableId || !apiUrl) {
-      throw new Error('Baserow environment variables (BASEROW_API_URL, BASEROW_API_KEY, BASEROW_TABLE_ID) are not configured.');
+      throw new Error('As variáveis de ambiente do Baserow (URL_API_BASEROW, CHAVE_API_BASEROW, ID_DA_TABELA_BASEROW) não foram configuradas.');
     }
 
     return { apiUrl, apiKey, tableId };
@@ -95,12 +95,20 @@ export async function listRows(): Promise<any> {
     headers: {
       'Authorization': `Token ${apiKey}`,
     },
+    cache: 'no-store', // Disable caching to ensure fresh data
   });
 
   if (!response.ok) {
     const errorBody = await response.json();
     console.error('Baserow list rows error:', errorBody);
-    throw new Error(`Failed to list rows from Baserow: ${response.statusText}`);
+    // Be more descriptive with the error for easier debugging
+    if (response.status === 404) {
+         throw new Error(`Tabela Baserow não encontrada. Verifique se o ID_DA_TABELA_BASEROW (${tableId}) está correto.`);
+    }
+     if (response.status === 401) {
+         throw new Error(`Acesso não autorizado ao Baserow. Verifique se a CHAVE_API_BASEROW está correta.`);
+    }
+    throw new Error(`Falha ao buscar linhas do Baserow: ${response.statusText}`);
   }
   const data = await response.json();
   return data.results; // The rows are in the 'results' property
