@@ -14,18 +14,18 @@ interface BaserowFileMetadata {
 }
 
 const getBaserowConfig = () => {
-    const apiUrl = process.env.NEXT_PUBLIC_URL_API_BASEROW;
-    const apiKey = process.env.NEXT_PUBLIC_CHAVE_API_BASEROW;
-    const tableId = process.env.NEXT_PUBLIC_ID_DA_TABELA_BASEROW;
+    // Correctly reads server-side environment variables without NEXT_PUBLIC_ prefix
+    const apiUrl = process.env.URL_API_BASEROW;
+    const apiKey = process.env.CHAVE_API_BASEROW;
+    const tableId = process.env.ID_DA_TABELA_BASEROW;
     const usersTableId = process.env.ID_DA_TABELA_USERS_BASEROW;
 
-
     if (!apiKey || !apiUrl) {
-      throw new Error('As variáveis de ambiente do Baserow (NEXT_PUBLIC_URL_API_BASEROW, NEXT_PUBLIC_CHAVE_API_BASEROW) não foram configuradas.');
+      throw new Error('As variáveis de ambiente do Baserow (URL_API_BASEROW, CHAVE_API_BASEROW) não foram configuradas.');
     }
 
     if(!tableId && !usersTableId) {
-       throw new Error('Pelo menos uma variável de ID de tabela do Baserow (NEXT_PUBLIC_ID_DA_TABELA_BASEROW ou ID_DA_TABELA_USERS_BASEROW) deve ser configurada.');
+       throw new Error('Pelo menos uma variável de ID de tabela do Baserow (ID_DA_TABELA_BASEROW ou ID_DA_TABELA_USERS_BASEROW) deve ser configurada.');
     }
 
     return { apiUrl, apiKey, tableId, usersTableId };
