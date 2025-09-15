@@ -7,7 +7,7 @@ import bcrypt from 'bcryptjs';
 
 export async function POST(req: NextRequest) {
   try {
-    const { usersTableId } = await getBaserowConfig(); // Ensure env vars are loaded and validated
+    const { usersTableId } = await getBaserowConfig();
     const { name, email, password } = await req.json();
 
     if (!name || !email || !password) {
@@ -27,14 +27,13 @@ export async function POST(req: NextRequest) {
     const uniqueId = `user_${new Date().getTime()}`;
     const now = new Date().toISOString();
     
-    // IMPORTANT: Keys must match Baserow field names EXACTLY
-    // The password field is 'password' (lowercase) as per BASEROW_AUTH_SETUP.md
+    // IMPORTANT: Keys must match Baserow field names EXACTLY (uppercase)
     const newUserPayload = {
       'EU IA': uniqueId,
-      'email': email,
-      'password': hashedPassword,
-      'name': name,
-      'created_at': now,
+      'EMAIL': email,
+      'PASSWORD': hashedPassword,
+      'NAME': name,
+      'CREATED_AT': now,
     };
 
     const newUser = await createRowInTable(usersTableId, newUserPayload);
