@@ -28,12 +28,13 @@ export async function POST(req: NextRequest) {
     const now = new Date().toISOString();
     
     // IMPORTANT: Keys must match Baserow field names EXACTLY
+    // The password field is 'password' (lowercase) as per BASEROW_AUTH_SETUP.md
     const newUserPayload = {
       'EU IA': uniqueId,
-      'EMAIL': email,
-      'PASSWORD': hashedPassword,
-      'NAME': name,
-      'CREATED_AT': now,
+      'email': email,
+      'password': hashedPassword,
+      'name': name,
+      'created_at': now,
     };
 
     const newUser = await createRowInTable(usersTableId, newUserPayload);

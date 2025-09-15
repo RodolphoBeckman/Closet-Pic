@@ -19,10 +19,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Credenciais inválidas.' }, { status: 401 });
     }
     
-    // The password field name in Baserow is 'PASSWORD'
-    const storedPassword = user.PASSWORD;
+    // The password field name in Baserow is 'password' (lowercase)
+    const storedPassword = user.password;
 
-    // Check for user.PASSWORD existence and type before accessing it
+    // Check for user.password existence and type before accessing it
     if (!storedPassword || typeof storedPassword !== 'string') {
         return NextResponse.json({ message: 'Credenciais inválidas.' }, { status: 401 });
     }
@@ -33,8 +33,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Credenciais inválidas.' }, { status: 401 });
     }
 
-    // Create session. The user name field is 'NAME'
-    await createSession({ name: user.NAME, email: user.EMAIL });
+    // Create session. The user name field is 'name'
+    await createSession({ name: user.name, email: user.email });
 
     return NextResponse.json({ message: 'Login bem-sucedido!' }, { status: 200 });
   } catch (error: any) {
