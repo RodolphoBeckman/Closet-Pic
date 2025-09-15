@@ -69,9 +69,8 @@ export default function LoginPage() {
           description: 'Redirecionando...',
         });
 
-        // Redirect to the originally intended page, or home
-        const redirectTo = searchParams.get('from') || '/';
-        router.push(redirectTo);
+        // Force a full page reload to ensure layout gets the new session
+        window.location.href = searchParams.get('from') || '/';
 
       } catch (error: any) {
         toast({
