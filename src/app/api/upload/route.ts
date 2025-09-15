@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     // 3. Create a new row in the Baserow table with the file metadata
     // IMPORTANT: The keys here must EXACTLY match the field names in your Baserow table.
     const rowData = {
-      'EU IA': uniqueId, // This is the primary key field. Let's use a timestamp for uniqueness.
+      'EU IA': uniqueId,
       'REFERÊNCIA': referencia,
       'MARCA': marca,
       'DIA': Number(dia),
