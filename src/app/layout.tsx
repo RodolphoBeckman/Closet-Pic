@@ -34,8 +34,8 @@ export default function RootLayout({
     };
   }, []);
 
-  // Fetch session data to display in the Header, but no longer handle redirects.
-  // The middleware is now responsible for route protection.
+  // Fetch session data to display in the Header.
+  // The middleware is now responsible for all route protection.
   useEffect(() => {
     async function fetchSession() {
       // Only fetch session if not on a public page, as it's not needed there.
@@ -61,7 +61,7 @@ export default function RootLayout({
   const isPublicPage = ['/login', '/register'].includes(pathname);
 
   // Render a full-page loader while the session is being checked on protected pages.
-  // This prevents flashes of content or incorrect redirects.
+  // This prevents flashes of content. The middleware handles the redirect logic.
   if (loading && !isPublicPage) {
      return (
        <html lang="en" suppressHydrationWarning>

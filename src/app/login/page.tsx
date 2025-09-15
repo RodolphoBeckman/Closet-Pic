@@ -69,7 +69,8 @@ export default function LoginPage() {
           description: 'Redirecionando...',
         });
 
-        // Use a full page reload to ensure the middleware re-evaluates the new session.
+        // Força um recarregamento completo da página para a rota principal.
+        // Isso garante que o middleware seja executado com o novo cookie de sessão.
         window.location.assign('/');
 
       } catch (error: any) {
