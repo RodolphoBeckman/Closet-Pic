@@ -1,3 +1,4 @@
+'use server';
 import { NextRequest, NextResponse } from 'next/server';
 import { findUserByEmail } from '@/lib/baserow';
 import { createSession } from '@/lib/session';
@@ -17,10 +18,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Credenciais inválidas.' }, { status: 401 });
     }
     
-    // The password from Baserow might be undefined if the column is empty
     const storedPassword = user.PASSWORD;
-    if(!storedPassword) {
-        return NextResponse.json({ message: 'A conta de usuário não possui uma senha configurada no banco de dados.' }, { status: 401 });
+    // Robust check: Ensure the stored password is a non-empty string before comparing.
+    // This handles cases where the field might be null, undefined, false, or an empty string.
+    if (!storedPassword || typeof storedPassword !== 'string') {
+        console.error(`Login attempt for ${email} failed: No valid password stored in database.`);
+        return NextResponse.json({ message: 'Credenciais inválidas.' }, { status: 401 });
     }
 
     const passwordsMatch = await bcrypt.compare(password, storedPassword);
@@ -34,7 +37,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ message: 'Login bem-sucedido!' }, { status: 200 });
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('Login server error:', error);
     return NextResponse.json({ message: 'Ocorreu um erro no servidor.' }, { status: 500 });
   }
 }
