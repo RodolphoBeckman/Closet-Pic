@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
     const responseWithUrls = {
         ...newRow,
         id: newRow['EU IA'], // Use the primary key value as the consistent ID for the frontend
-        dataRegistrada: dataRegistrada, // Return the original ISO string
+        dataRegistrada: dataRegistrada, // Return the original formatted string
         src: uploadedFileMetadata.map(meta => ({ url: meta.url, name: meta.name })),
         referencia: newRow['REFERÊNCIA'],
         marca: newRow['MARCA'],

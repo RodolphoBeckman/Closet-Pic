@@ -140,7 +140,7 @@ export function ImageUploadDialog({ onImagesUploaded, children, open: controlled
             const dia = format(today, 'dd');
             const mes = format(today, 'LLLL', { locale: ptBR });
             const ano = format(today, 'yyyy');
-            const dataRegistradaISO = today.toISOString();
+            const dataRegistrada = format(today, "dd 'de' MMMM 'de' yyyy HH:mm", { locale: ptBR });
 
 
             const formData = new FormData();
@@ -150,7 +150,7 @@ export function ImageUploadDialog({ onImagesUploaded, children, open: controlled
             formData.append('dia', dia);
             formData.append('mes', mes);
             formData.append('ano', ano);
-            formData.append('dataRegistrada', dataRegistradaISO);
+            formData.append('dataRegistrada', dataRegistrada);
             formData.append('baserowApiUrl', baserowApiUrl);
             formData.append('baserowApiKey', baserowApiKey);
             formData.append('baserowTableId', baserowTableId);
@@ -169,18 +169,17 @@ export function ImageUploadDialog({ onImagesUploaded, children, open: controlled
                 const newRow = await response.json();
                 totalFiles += group.files.length;
                 
-                // This converts the response from our API into the StoredImage format for the frontend state
                 const uploadedImages: StoredImage[] = (newRow.src || []).map((img: any, index: number) => ({
                     id: `${newRow.id}-${index}`, // This ID is for frontend key purposes
                     src: img.url,
                     category: 'default',
                     alt: img.name,
-                    referencia: newRow.referencia,
+                    referencia: newRow.referencia, // This was the missing piece
                     marca: newRow.marca,
                     dia: String(newRow.dia),
                     mes: newRow.mes,
                     ano: String(newRow.ano),
-                    dataRegistrada: newRow.dataRegistrada ? format(new Date(newRow.dataRegistrada), "dd 'de' MMMM 'de' yyyy HH:mm", { locale: ptBR }) : 'N/A',
+                    dataRegistrada: newRow.dataRegistrada
                 }));
                 allUploadedImages = [...allUploadedImages, ...uploadedImages];
             } catch (error: any) {
