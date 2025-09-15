@@ -3,6 +3,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { listRows } from '@/lib/baserow';
 import type { BaserowRow, StoredImage } from '@/types';
+import { format, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 function transformBaserowRowToStoredImage(row: BaserowRow): StoredImage[] {
   // A single Baserow row can contain multiple images in the 'SRC' field.
@@ -16,6 +18,21 @@ function transformBaserowRowToStoredImage(row: BaserowRow): StoredImage[] {
     // Create a unique ID for each image by combining the Baserow row ID and the image index.
     const uniqueImageId = `${row['EU IA']}-${index}`;
 
+    let formattedDate = '-';
+    // The date from baserow can come as an ISO string (e.g., '2024-07-28T18:10:00Z')
+    // We need to parse it and then format it for Brazilian locale.
+    if (row['DATA REGISTRADA']) {
+        try {
+            const date = parseISO(row['DATA REGISTRADA']);
+            formattedDate = format(date, "dd 'de' MMMM 'de' yyyy HH:mm", { locale: ptBR });
+        } catch (e) {
+            console.warn(`Invalid date format for row ${row['EU IA']}: ${row['DATA REGISTRADA']}`);
+            // Keep the original string if parsing fails, or use a default.
+            formattedDate = row['DATA REGISTRADA']; 
+        }
+    }
+
+
     return {
       id: uniqueImageId,
       src: file.url,
@@ -25,7 +42,7 @@ function transformBaserowRowToStoredImage(row: BaserowRow): StoredImage[] {
       dia: row['DIA'] ? String(row['DIA']) : undefined,
       mes: row['MES'],
       ano: row['ANO'] ? String(row['ANO']) : undefined,
-      dataRegistrada: row['DATA REGISTRADA'],
+      dataRegistrada: formattedDate,
       category: 'default', // Keep a default category
     };
   });
