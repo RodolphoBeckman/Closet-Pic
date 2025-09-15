@@ -76,10 +76,6 @@ export async function POST(req: NextRequest) {
 
   } catch (error: any) {
     console.error('Upload failed:', error);
-    // Be more specific about the error if it's a config issue
-     if (error.message.includes('variáveis de ambiente')) {
-        return NextResponse.json({ message: error.message }, { status: 400 });
-    }
-    return NextResponse.json({ message: 'An error occurred during upload.', details: error.message }, { status: 500 });
+    return NextResponse.json({ message: error.message || 'An error occurred during upload.' }, { status: 500 });
   }
 }
