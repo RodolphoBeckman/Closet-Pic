@@ -30,6 +30,7 @@ import { ChartView } from '@/components/chart-view';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Settings } from 'lucide-react';
+import { BrandDetailsDialog } from '@/components/brand-details-dialog';
 
 
 type ViewMode = 'table' | 'gallery' | 'chart';
@@ -43,6 +44,8 @@ export default function Home() {
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [configError, setConfigError] = useState<string | null>(null);
   const { toast } = useToast();
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchImages = async () => {
@@ -207,6 +210,24 @@ export default function Home() {
     }));
   }, [filteredImages]);
 
+  const brandDetails = useMemo(() => {
+    if (!selectedBrand) return null;
+    const brandImages = filteredImages.filter(img => (img.marca || 'Sem Marca') === selectedBrand);
+    const groupedByRef = brandImages.reduce((acc, image) => {
+        const ref = image.referencia || 'sem-referencia';
+        if (!acc[ref]) {
+            acc[ref] = {
+                groupKey: ref,
+                referencia: image.referencia || '-',
+                images: [],
+            };
+        }
+        acc[ref].images.push({ id: image.id, src: image.src, alt: image.alt });
+        return acc;
+    }, {} as { [key: string]: { groupKey: string; referencia: string; images: { id: string; src: string; alt: string }[] } });
+    return Object.values(groupedByRef);
+  }, [selectedBrand, filteredImages]);
+
   const clearFilters = () => {
     setSearchQuery('');
     setDateRange(undefined);
@@ -217,6 +238,13 @@ export default function Home() {
     const allImages = images;
     return allImages.find(img => img.id === selectedImage) || null;
   }, [selectedImage, images]);
+
+  const handleBarClick = (data: any) => {
+    if (data && data.marca) {
+        setSelectedBrand(data.marca);
+        setIsDetailsOpen(true);
+    }
+  }
 
   const noImages = !isLoading && images.length === 0 && !configError;
   const noFilteredResults = !noImages && filteredImages.length === 0;
@@ -272,7 +300,7 @@ export default function Home() {
         return <GalleryView imageGroups={galleryGroupedImages} onImageClick={(id) => setSelectedImage(id)} />;
     }
     if (viewMode === 'chart') {
-        return <ChartView data={chartData} />;
+        return <ChartView data={chartData} onBarClick={handleBarClick} />;
     }
     return null;
   }
@@ -393,6 +421,16 @@ export default function Home() {
           alt={currentImage.alt}
           isOpen={!!selectedImage}
           onOpenChange={(open) => !open && setSelectedImage(null)}
+        />
+      )}
+
+      {brandDetails && selectedBrand && (
+        <BrandDetailsDialog
+            isOpen={isDetailsOpen}
+            onOpenChange={setIsDetailsOpen}
+            brand={selectedBrand}
+            details={brandDetails}
+            onImageClick={(id) => setSelectedImage(id)}
         />
       )}
     </div>

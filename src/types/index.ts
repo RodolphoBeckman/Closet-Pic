@@ -49,3 +49,13 @@ export interface ChartData {
   marca: string;
   referencias: number;
 }
+
+export interface BrandDetailItem {
+    groupKey: string;
+    referencia: string;
+    images: {
+        id: string;
+        src: string;
+        alt: string;
+    }[];
+}

@@ -16,9 +16,10 @@ import type { ChartData } from "@/types"
 
 type ChartViewProps = {
     data: ChartData[];
+    onBarClick: (data: any) => void;
 }
 
-export function ChartView({ data }: ChartViewProps) {
+export function ChartView({ data, onBarClick }: ChartViewProps) {
   const chartConfig = {
     referencias: {
       label: "Referências",
@@ -40,11 +41,16 @@ export function ChartView({ data }: ChartViewProps) {
     <Card>
       <CardHeader>
         <CardTitle>Referências por Marca</CardTitle>
-        <CardDescription>Quantidade de referências únicas para cada marca.</CardDescription>
+        <CardDescription>Quantidade de referências únicas para cada marca. Clique numa barra para ver os detalhes.</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
-          <BarChart accessibilityLayer data={data} margin={{ top: 20 }}>
+          <BarChart 
+            accessibilityLayer 
+            data={data} 
+            margin={{ top: 20 }}
+            onClick={(e) => e && onBarClick(e.activePayload?.[0]?.payload)}
+            >
             <CartesianGrid vertical={false} />
             <XAxis
               dataKey="marca"
@@ -54,7 +60,7 @@ export function ChartView({ data }: ChartViewProps) {
             />
             <YAxis allowDecimals={false} />
             <Tooltip
-              cursor={false}
+              cursor={{fill: 'hsl(var(--muted))'}}
               content={<ChartTooltipContent indicator="dot" />}
             />
             <Legend />
