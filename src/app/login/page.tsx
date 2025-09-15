@@ -72,7 +72,6 @@ export default function LoginPage() {
         // Redirect to the originally intended page, or home
         const redirectTo = searchParams.get('from') || '/';
         router.push(redirectTo);
-        router.refresh(); // Refresh to update session state in layout
 
       } catch (error: any) {
         toast({
