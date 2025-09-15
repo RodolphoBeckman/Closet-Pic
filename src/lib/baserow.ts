@@ -1,5 +1,7 @@
 'use server';
 import type { BaserowUser } from '@/types';
+require('dotenv').config();
+
 
 interface BaserowFileMetadata {
     url: string;
