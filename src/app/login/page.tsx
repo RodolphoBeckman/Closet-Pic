@@ -66,9 +66,9 @@ export default function LoginPage() {
           title: 'Login bem-sucedido!',
           description: 'Redirecionando...',
         });
-
-        // Força um recarregamento completo para a página inicial.
-        // Isso garante que o middleware seja executado com o novo cookie de sessão.
+        
+        // Force a full page reload to the home page.
+        // This is the most robust way to ensure the middleware runs with the new session cookie.
         window.location.href = '/';
 
       } catch (error: any) {

@@ -56,8 +56,6 @@ export default function RootLayout({
 
   const isPublicPage = ['/login', '/register'].includes(pathname);
 
-  // Renderiza o layout completo. O middleware já garantiu que o usuário
-  // tem permissão para estar nesta página.
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
