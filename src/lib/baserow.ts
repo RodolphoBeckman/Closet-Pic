@@ -164,7 +164,7 @@ export async function findUserByEmail(email: string): Promise<BaserowUser | null
     // Since 'contains_i' can match parts of emails, we need to double-check
     // for an exact match, but case-insensitively.
     const matchingUser = data.results.find(
-      (user: BaserowUser) => user.EMAIL.toLowerCase() === email.toLowerCase()
+      (user: BaserowUser) => user.EMAIL && user.EMAIL.toLowerCase() === email.toLowerCase()
     );
 
     if (matchingUser) {
