@@ -25,8 +25,6 @@ export async function POST(req: NextRequest) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const uniqueId = `user_${new Date().getTime()}`;
-    // Using ISO format, as it's the most robust way to handle dates with APIs.
-    // The Baserow column should be configured to accept ISO 8601 format.
     const now = new Date().toISOString(); 
     
     // IMPORTANT: Keys must match Baserow field names EXACTLY (uppercase)
