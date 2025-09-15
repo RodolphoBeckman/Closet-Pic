@@ -17,12 +17,15 @@ interface BaserowFileMetadata {
  */
 export async function uploadFile(
   file: File,
-  apiKey: string
+  apiKey: string,
+  apiUrl: string
 ): Promise<BaserowFileMetadata> {
   const formData = new FormData();
   formData.append('file', file);
+  
+  const uploadUrl = new URL('/api/user-files/upload-file/', apiUrl).toString();
 
-  const response = await fetch('https://api.baserow.io/api/user-files/upload-file/', {
+  const response = await fetch(uploadUrl, {
     method: 'POST',
     headers: {
       'Authorization': `Token ${apiKey}`,
@@ -45,10 +48,12 @@ export async function uploadFile(
 export async function createRow(
   rowData: Record<string, any>,
   tableId: string,
-  apiKey: string
+  apiKey: string,
+  apiUrl: string
 ): Promise<any> {
+  const createRowUrl = new URL(`/api/database/rows/table/${tableId}/?user_field_names=true`, apiUrl).toString();
 
-  const response = await fetch(`https://api.baserow.io/api/database/rows/table/${tableId}/?user_field_names=true`, {
+  const response = await fetch(createRowUrl, {
     method: 'POST',
     headers: {
       'Authorization': `Token ${apiKey}`,

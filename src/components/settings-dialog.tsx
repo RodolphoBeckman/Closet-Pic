@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -20,13 +20,26 @@ type TestStatus = 'idle' | 'testing' | 'success' | 'error';
 
 export function SettingsDialog() {
   const [open, setOpen] = useState(false);
+  const [baserowApiUrl, setBaserowApiUrl] = useState('');
   const [baserowApiKey, setBaserowApiKey] = useState('');
   const [baserowTableId, setBaserowTableId] = useState('');
   const [testStatus, setTestStatus] = useState<TestStatus>('idle');
   const { toast } = useToast();
 
+  useEffect(() => {
+    if (open) {
+      const url = localStorage.getItem('baserowApiUrl') || 'https://api.baserow.io';
+      const key = localStorage.getItem('baserowApiKey') || '';
+      const tableId = localStorage.getItem('baserowTableId') || '';
+      setBaserowApiUrl(url);
+      setBaserowApiKey(key);
+      setBaserowTableId(tableId);
+      setTestStatus('idle');
+    }
+  }, [open]);
+
   const handleSave = () => {
-    // In a real app, you would securely save these keys.
+    localStorage.setItem('baserowApiUrl', baserowApiUrl);
     localStorage.setItem('baserowApiKey', baserowApiKey);
     localStorage.setItem('baserowTableId', baserowTableId);
     toast({
@@ -39,15 +52,14 @@ export function SettingsDialog() {
   const handleTestConnection = async () => {
     setTestStatus('testing');
 
-    // Simulate API call to Baserow. In a real scenario, this would be a proper API request.
     // We are just checking if the values exist for this simulation.
-    if (baserowApiKey && baserowTableId) {
+    if (baserowApiUrl && baserowApiKey && baserowTableId) {
         // Simulate a successful connection
         setTimeout(() => {
             setTestStatus('success');
             toast({
                 title: 'Conexão bem-sucedida!',
-                description: 'As credenciais do Baserow são válidas.',
+                description: 'As credenciais do Baserow parecem válidas. Clique em Salvar.',
             });
         }, 1500);
     } else {
@@ -56,7 +68,7 @@ export function SettingsDialog() {
             setTestStatus('error');
             toast({
                 title: 'Falha na conexão',
-                description: 'Verifique a chave da API e o ID da tabela.',
+                description: 'Verifique a URL, a chave da API e o ID da tabela.',
                 variant: 'destructive',
             });
         }, 1500);
@@ -86,6 +98,20 @@ export function SettingsDialog() {
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="baserow-api-url">URL da API do Baserow</Label>
+            <div className="relative">
+                <Input
+                id="baserow-api-url"
+                placeholder="https://api.baserow.io"
+                value={baserowApiUrl}
+                onChange={(e) => {
+                    setBaserowApiUrl(e.target.value);
+                    resetTestStatus();
+                }}
+                />
+            </div>
+          </div>
           <div className="grid gap-2">
             <Label htmlFor="baserow-api-key">Chave da API do Baserow</Label>
             <div className="relative">

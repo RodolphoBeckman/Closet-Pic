@@ -99,13 +99,14 @@ export function ImageUploadDialog({ onImagesUploaded, children, open: controlled
       return;
     }
     
+    const baserowApiUrl = localStorage.getItem('baserowApiUrl');
     const baserowApiKey = localStorage.getItem('baserowApiKey');
     const baserowTableId = localStorage.getItem('baserowTableId');
 
-    if (!baserowApiKey || !baserowTableId) {
+    if (!baserowApiKey || !baserowTableId || !baserowApiUrl) {
         toast({
             title: 'Configuração Incompleta',
-            description: 'Por favor, configure a API Key e o Table ID do Baserow nas configurações.',
+            description: 'Por favor, configure a URL, a API Key e o Table ID do Baserow nas configurações.',
             variant: 'destructive',
         });
         return;
@@ -128,6 +129,7 @@ export function ImageUploadDialog({ onImagesUploaded, children, open: controlled
       formData.append('mes', mes);
       formData.append('ano', ano);
       formData.append('dataRegistrada', dataRegistradaISO);
+      formData.append('baserowApiUrl', baserowApiUrl);
       formData.append('baserowApiKey', baserowApiKey);
       formData.append('baserowTableId', baserowTableId);
 
@@ -144,8 +146,6 @@ export function ImageUploadDialog({ onImagesUploaded, children, open: controlled
 
         const newRow = await response.json();
         
-        // This is a bit of a hack, we create "StoredImage" objects on the fly
-        // to update the UI immediately without having to re-fetch.
         const uploadedImages: StoredImage[] = (newRow.src || []).map((img: any, index: number) => ({
             id: `${newRow.id}-${index}`, // Create a unique-ish ID
             src: img.url,

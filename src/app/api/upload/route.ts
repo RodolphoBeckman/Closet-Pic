@@ -18,11 +18,12 @@ export async function POST(req: NextRequest) {
     const mes = formData.get('mes') as string;
     const ano = formData.get('ano') as string;
     const dataRegistrada = formData.get('dataRegistrada') as string;
+    const baserowApiUrl = formData.get('baserowApiUrl') as string;
     const baserowApiKey = formData.get('baserowApiKey') as string;
     const baserowTableId = formData.get('baserowTableId') as string;
 
-    if (!baserowApiKey || !baserowTableId) {
-      return NextResponse.json({ message: 'Baserow API Key or Table ID are missing.' }, { status: 400 });
+    if (!baserowApiKey || !baserowTableId || !baserowApiUrl) {
+      return NextResponse.json({ message: 'Baserow API URL, Key or Table ID are missing.' }, { status: 400 });
     }
 
     if (!files || files.length === 0) {
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
     
     // 1. Upload all files to Baserow storage first
     const uploadedFileMetadata = await Promise.all(
-        files.map(file => uploadFile(file, baserowApiKey))
+        files.map(file => uploadFile(file, baserowApiKey, baserowApiUrl))
     );
 
     // 2. Create a new row in the Baserow table with the file metadata
@@ -53,7 +54,7 @@ export async function POST(req: NextRequest) {
       alt: files.map(file => file.name).join(', '),
     };
 
-    const newRow = await createRow(rowData, baserowTableId, baserowApiKey);
+    const newRow = await createRow(rowData, baserowTableId, baserowApiKey, baserowApiUrl);
 
     // 3. Manually add the full URLs and the original date to the response for the frontend to use
     const responseWithUrls = {
