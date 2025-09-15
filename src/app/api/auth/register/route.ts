@@ -6,9 +6,9 @@ import bcrypt from 'bcryptjs';
 import { createRowInTable } from '@/lib/baserow'; // Usaremos a função genérica
 
 async function createUser(userData: Record<string, any>): Promise<any> {
-    const usersTableId = process.env.NEXT_PUBLIC_ID_DA_TABELA_USERS_BASEROW;
+    const usersTableId = process.env.ID_DA_TABELA_USERS_BASEROW;
     if (!usersTableId) {
-        throw new Error("ID da tabela de usuários não configurado.");
+        throw new Error("ID da tabela de usuários (ID_DA_TABELA_USERS_BASEROW) não configurado no ambiente.");
     }
     return createRowInTable(usersTableId, userData);
 }

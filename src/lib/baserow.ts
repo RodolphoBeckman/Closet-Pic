@@ -17,7 +17,7 @@ const getBaserowConfig = () => {
     const apiUrl = process.env.NEXT_PUBLIC_URL_API_BASEROW;
     const apiKey = process.env.NEXT_PUBLIC_CHAVE_API_BASEROW;
     const tableId = process.env.NEXT_PUBLIC_ID_DA_TABELA_BASEROW;
-    const usersTableId = process.env.NEXT_PUBLIC_ID_DA_TABELA_USERS_BASEROW;
+    const usersTableId = process.env.ID_DA_TABELA_USERS_BASEROW;
 
 
     if (!apiKey || !apiUrl) {
@@ -25,7 +25,7 @@ const getBaserowConfig = () => {
     }
 
     if(!tableId && !usersTableId) {
-       throw new Error('Pelo menos uma variável de ID de tabela do Baserow (NEXT_PUBLIC_ID_DA_TABELA_BASEROW ou NEXT_PUBLIC_ID_DA_TABELA_USERS_BASEROW) deve ser configurada.');
+       throw new Error('Pelo menos uma variável de ID de tabela do Baserow (NEXT_PUBLIC_ID_DA_TABELA_BASEROW ou ID_DA_TABELA_USERS_BASEROW) deve ser configurada.');
     }
 
     return { apiUrl, apiKey, tableId, usersTableId };
@@ -141,7 +141,7 @@ export async function findUserByEmail(email: string): Promise<BaserowUser | null
     const url = new URL(`/api/database/rows/table/${usersTableId}/`, apiUrl);
     url.searchParams.append('user_field_names', 'true');
     // Add a filter to find the user by email (case-insensitive)
-    url.searchParams.append('filter__field_EMAIL__contains_i', email);
+    url.searchParams.append('filter__field_EMAIL__equal', email.toLowerCase());
     // Add a filter to ensure the email field is not empty
     url.searchParams.append('filter__field_EMAIL__is_not_empty', 'true');
     url.searchParams.append('size', '1'); // We only expect one user
@@ -161,14 +161,8 @@ export async function findUserByEmail(email: string): Promise<BaserowUser | null
     }
 
     const data = await response.json();
-    // Since 'contains_i' can match parts of emails, we need to double-check
-    // for an exact match, but case-insensitively.
-    const matchingUser = data.results.find(
-      (user: BaserowUser) => user.EMAIL && user.EMAIL.toLowerCase() === email.toLowerCase()
-    );
-
-    if (matchingUser) {
-      return matchingUser;
+    if (data.results && data.results.length > 0) {
+        return data.results[0];
     }
     
     return null;
