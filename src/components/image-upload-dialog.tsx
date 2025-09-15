@@ -98,34 +98,84 @@ export function ImageUploadDialog({ onImagesUploaded, children, open: controlled
       });
       return;
     }
+    
+    const baserowApiKey = localStorage.getItem('baserowApiKey');
+    const baserowTableId = localStorage.getItem('baserowTableId');
 
-    const today = new Date();
-    const dia = format(today, 'dd');
-    const mes = format(today, 'LLLL', { locale: ptBR }); // Full month name in Portuguese
-    const ano = format(today, 'yyyy');
-    const dataRegistrada = format(today, "dd 'de' MMMM 'de' yyyy HH:mm", { locale: ptBR });
+    if (!baserowApiKey || !baserowTableId) {
+        toast({
+            title: 'Configuração Incompleta',
+            description: 'Por favor, configure a API Key e o Table ID do Baserow nas configurações.',
+            variant: 'destructive',
+        });
+        return;
+    }
 
-    startTransition(() => {
-      const uploadedImages: StoredImage[] = files.map(({ file, previewUrl }) => ({
-        id: `${new Date().toISOString()}-${file.name}`,
-        src: previewUrl,
-        category: 'default',
-        alt: file.name,
-        referencia: referencia || undefined,
-        marca: marca || undefined,
-        dia,
-        mes,
-        ano,
-        dataRegistrada,
-      }));
-      
-      onImagesUploaded(uploadedImages);
-      toast({
-        title: 'Upload Completo',
-        description: `${uploadedImages.length} imagem(ns) carregada(s) com sucesso.`,
-      });
-      
-      handleOpenChange(false);
+
+    startTransition(async () => {
+      const today = new Date();
+      const dia = format(today, 'dd');
+      const mes = format(today, 'LLLL', { locale: ptBR });
+      const ano = format(today, 'yyyy');
+      const dataRegistrada = format(today, "dd 'de' MMMM 'de' yyyy HH:mm", { locale: ptBR });
+      const dataRegistradaISO = today.toISOString();
+
+
+      const formData = new FormData();
+      files.forEach(f => formData.append('files', f.file));
+      formData.append('referencia', referencia);
+      formData.append('marca', marca);
+      formData.append('dia', dia);
+      formData.append('mes', mes);
+      formData.append('ano', ano);
+      formData.append('dataRegistrada', dataRegistradaISO);
+      formData.append('baserowApiKey', baserowApiKey);
+      formData.append('baserowTableId', baserowTableId);
+
+      try {
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Falha no upload');
+        }
+
+        const newRow = await response.json();
+        
+        // This is a bit of a hack, we create "StoredImage" objects on the fly
+        // to update the UI immediately without having to re-fetch.
+        const uploadedImages: StoredImage[] = newRow.src.map((img: any, index: number) => ({
+            id: `${newRow.id}-${index}`, // Create a unique-ish ID
+            src: img.url,
+            category: 'default',
+            alt: img.name,
+            referencia: newRow.referencia,
+            marca: newRow.marca,
+            dia: String(newRow.dia),
+            mes: newRow.mes,
+            ano: String(newRow.ano),
+            dataRegistrada: format(new Date(newRow.dataRegistrada), "dd 'de' MMMM 'de' yyyy HH:mm", { locale: ptBR }),
+        }));
+        
+        onImagesUploaded(uploadedImages);
+
+        toast({
+          title: 'Upload Completo',
+          description: `${files.length} imagem(ns) enviada(s) para o Baserow com sucesso.`,
+        });
+
+        handleOpenChange(false);
+      } catch (error: any) {
+        console.error('Upload error:', error);
+        toast({
+          title: 'Erro no Upload',
+          description: error.message || 'Não foi possível enviar as imagens. Verifique o console para mais detalhes.',
+          variant: 'destructive',
+        });
+      }
     });
   };
   
