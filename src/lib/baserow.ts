@@ -13,12 +13,12 @@ interface BaserowFileMetadata {
 }
 
 const getBaserowConfig = () => {
-    const apiUrl = process.env.URL_API_BASEROW;
-    const apiKey = process.env.CHAVE_API_BASEROW;
-    const tableId = process.env.ID_DA_TABELA_BASEROW;
+    const apiUrl = process.env.NEXT_PUBLIC_URL_API_BASEROW;
+    const apiKey = process.env.NEXT_PUBLIC_CHAVE_API_BASEROW;
+    const tableId = process.env.NEXT_PUBLIC_ID_DA_TABELA_BASEROW;
 
     if (!apiKey || !tableId || !apiUrl) {
-      throw new Error('As variáveis de ambiente do Baserow (URL_API_BASEROW, CHAVE_API_BASEROW, ID_DA_TABELA_BASEROW) não foram configuradas.');
+      throw new Error('As variáveis de ambiente do Baserow (NEXT_PUBLIC_URL_API_BASEROW, NEXT_PUBLIC_CHAVE_API_BASEROW, NEXT_PUBLIC_ID_DA_TABELA_BASEROW) não foram configuradas.');
     }
 
     return { apiUrl, apiKey, tableId };
