@@ -18,8 +18,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Credenciais inválidas.' }, { status: 401 });
     }
     
-    // Check for user.PASSWORD existence before accessing it
-    if (!user.PASSWORD) {
+    // Check for user.PASSWORD existence and type before accessing it
+    if (!user.PASSWORD || typeof user.PASSWORD !== 'string') {
         return NextResponse.json({ message: 'Credenciais inválidas.' }, { status: 401 });
     }
 

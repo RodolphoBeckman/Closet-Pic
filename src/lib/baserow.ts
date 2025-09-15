@@ -140,7 +140,7 @@ export async function findUserByEmail(email: string): Promise<BaserowUser | null
     
     const url = new URL(`/api/database/rows/table/${usersTableId}/`, apiUrl);
     url.searchParams.append('user_field_names', 'true');
-    // Use an exact (but case-insensitive) filter for the email
+    // Use an exact filter for the email
     url.searchParams.append('filter__field_EMAIL__equal', email);
     url.searchParams.append('size', '1');
 
@@ -154,22 +154,17 @@ export async function findUserByEmail(email: string): Promise<BaserowUser | null
         });
 
         if (!response.ok) {
-            // If the table or view is not found, Baserow might return a 404.
-            // If the filter is bad, it might be a 400.
-            // We'll log the error and return null as the user was not found.
             const errorBody = await response.text();
             console.error(`Baserow API error when finding user by email (${email}): ${response.status} ${response.statusText}`, errorBody);
             return null;
         }
 
         const data = await response.json();
-
-        // If results array exists and has at least one item, return the first one.
+        
         if (data.results && data.results.length > 0) {
             return data.results[0] as BaserowUser;
         }
 
-        // If no results, the user doesn't exist.
         return null;
 
     } catch (error) {
