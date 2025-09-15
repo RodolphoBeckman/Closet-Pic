@@ -7,14 +7,12 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { useEffect, useState } from 'react';
 import type { UserSession } from '@/types';
 import Header from '@/components/header';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 
 // export const metadata: Metadata = {
 //   title: 'ClosetPic',
 //   description: 'Upload, categorize, and search your images.',
 // };
-
-// A lógica de proteção de rotas foi movida para o middleware.ts
 
 export default function RootLayout({
   children,
@@ -36,39 +34,40 @@ export default function RootLayout({
     };
   }, []);
 
-  // Busca os dados da sessão para exibir no Header, mas não lida mais com redirecionamentos.
+  // Fetch session data to display in the Header, but no longer handle redirects.
+  // The middleware is now responsible for route protection.
   useEffect(() => {
     async function fetchSession() {
-      try {
-        const response = await fetch('/api/auth/session');
-        if (response.ok) {
-          const data = await response.json();
-          setUser(data.session || null);
-        } else {
-           setUser(null);
+      // Only fetch session if not on a public page, as it's not needed there.
+      if (!['/login', '/register'].includes(pathname)) {
+        try {
+          const response = await fetch('/api/auth/session');
+          if (response.ok) {
+            const data = await response.json();
+            setUser(data.session || null);
+          } else {
+             setUser(null);
+          }
+        } catch (error) {
+          console.error("Failed to fetch session:", error);
+          setUser(null);
         }
-      } catch (error) {
-        console.error("Failed to fetch session:", error);
-        setUser(null);
-      } finally {
-        setLoading(false);
       }
+      setLoading(false);
     }
     fetchSession();
-  }, [pathname]); // Re-fetches a sessão quando a rota muda
+  }, [pathname]);
 
-
-  // O middleware agora lida com o redirecionamento de usuários logados/deslogados.
-  // Este layout não precisa mais dessa lógica.
-
-  // Renderiza um loader enquanto a sessão está sendo verificada
   const isPublicPage = ['/login', '/register'].includes(pathname);
+
+  // Render a full-page loader while the session is being checked on protected pages.
+  // This prevents flashes of content or incorrect redirects.
   if (loading && !isPublicPage) {
      return (
        <html lang="en" suppressHydrationWarning>
-        <body>
-          <div className="flex items-center justify-center min-h-screen">
-            {/* Um loader simples pode ser exibido aqui */}
+        <body className="font-body antialiased">
+          <div className="flex items-center justify-center min-h-screen bg-background">
+            {/* You can place a more sophisticated loader/spinner here */}
           </div>
         </body>
       </html>
@@ -104,7 +103,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {/* O Header só será exibido se não for uma página pública, para não aparecer na tela de login */}
+          {/* The Header is only displayed on non-public pages */}
           {!isPublicPage && <Header user={user} />}
           {children}
           <Toaster />

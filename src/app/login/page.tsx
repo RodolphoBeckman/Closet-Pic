@@ -69,9 +69,8 @@ export default function LoginPage() {
           description: 'Redirecionando...',
         });
 
-        // Força uma atualização do estado do servidor. O middleware irá
-        // então redirecionar para a página principal porque a sessão agora existe.
-        router.refresh();
+        // Use a full page reload to ensure the middleware re-evaluates the new session.
+        window.location.assign('/');
 
       } catch (error: any) {
         toast({
