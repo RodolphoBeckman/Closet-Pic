@@ -76,9 +76,9 @@ export default function Home() {
   }, [toast]);
 
 
-  const handleImagesUploaded = (uploadedImage: StoredImage) => {
-    // We receive one group at a time now.
-    setImages(prev => [uploadedImage, ...prev]);
+  const handleImagesUploaded = (uploadedImages: StoredImage[]) => {
+    // We receive an array of images for each group uploaded.
+    setImages(prev => [...uploadedImages, ...prev]);
   };
 
   const filteredImages = useMemo(() => {
@@ -201,7 +201,7 @@ export default function Home() {
       <main className="flex-1">
         <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8 max-w-7xl">
           <div className="mb-8 flex flex-col sm:flex-row gap-4 items-center">
-            <ImageUploadDialog onImageUploaded={handleImagesUploaded}>
+            <ImageUploadDialog onImagesUploaded={handleImagesUploaded}>
                 <Button>
                     <Upload className="mr-2 h-4 w-4" />
                     Upload Images

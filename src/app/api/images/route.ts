@@ -11,18 +11,24 @@ function transformBaserowRowToStoredImage(row: BaserowRow): StoredImage[] {
     return [];
   }
 
-  return row.SRC.map((file, index) => ({
-    id: `${row['EU IA']}-${index}`, // Create a unique ID for each image
-    src: file.url,
-    alt: file.name,
-    referencia: row['REFERÊNCIA'],
-    marca: row['MARCA'],
-    dia: String(row['DIA']),
-    mes: row['MES'],
-    ano: String(row['ANO']),
-    dataRegistrada: row['DATA REGISTRADA'],
-    category: 'default',
-  }));
+  // A row might have multiple files in the 'SRC' field. Create an image object for each.
+  return row.SRC.map((file, index) => {
+    // Create a unique ID for each image by combining the Baserow row ID and the image index.
+    const uniqueImageId = `${row['EU IA']}-${index}`;
+
+    return {
+      id: uniqueImageId,
+      src: file.url,
+      alt: file.name,
+      referencia: row['REFERÊNCIA'],
+      marca: row['MARCA'],
+      dia: row['DIA'] ? String(row['DIA']) : undefined,
+      mes: row['MES'],
+      ano: row['ANO'] ? String(row['ANO']) : undefined,
+      dataRegistrada: row['DATA REGISTRADA'],
+      category: 'default', // Keep a default category
+    };
+  });
 }
 
 
@@ -39,7 +45,7 @@ export async function GET(req: NextRequest) {
   try {
     const rows: BaserowRow[] = await listRows(tableId, apiKey, apiUrl);
     
-    // Each row from Baserow might contain multiple images. We need to flatten this.
+    // Each row from Baserow might contain multiple images. We use flatMap to flatten them into a single array.
     const allImages: StoredImage[] = rows.flatMap(transformBaserowRowToStoredImage);
 
     return NextResponse.json(allImages, { status: 200 });

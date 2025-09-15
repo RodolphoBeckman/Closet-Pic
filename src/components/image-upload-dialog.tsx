@@ -23,7 +23,7 @@ import { ptBR } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 
 type ImageUploadDialogProps = {
-  onImageUploaded: (image: StoredImage) => void;
+  onImagesUploaded: (images: StoredImage[]) => void;
   children: React.ReactNode;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -41,7 +41,7 @@ interface UploadGroup {
     files: UploadFile[];
 }
 
-export function ImageUploadDialog({ onImageUploaded, children, open: controlledOpen, onOpenChange: setControlledOpen }: ImageUploadDialogProps) {
+export function ImageUploadDialog({ onImagesUploaded, children, open: controlledOpen, onOpenChange: setControlledOpen }: ImageUploadDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [uploadGroups, setUploadGroups] = useState<UploadGroup[]>([]);
   const [isPending, startTransition] = useTransition();
@@ -165,9 +165,9 @@ export function ImageUploadDialog({ onImageUploaded, children, open: controlledO
                     throw new Error(`Falha no upload para ref ${group.referencia}: ${errorData.message}`);
                 }
 
-                const newRowAsStoredImage = await response.json();
+                const newImages: StoredImage[] = await response.json();
                 totalFiles += group.files.length;
-                onImageUploaded(newRowAsStoredImage);
+                onImagesUploaded(newImages);
 
             } catch (error: any) {
                 hasError = true;

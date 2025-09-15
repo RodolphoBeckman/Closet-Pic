@@ -2,6 +2,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createRow, uploadFile } from '@/lib/baserow';
+import type { StoredImage } from '@/types';
 
 // Baserow has a file size limit of 5MB on the free plan. We set it a bit lower.
 const MAX_FILE_SIZE_MB = 4.5;
@@ -62,20 +63,23 @@ export async function POST(req: NextRequest) {
 
     const newRow = await createRow(rowData, baserowTableId, baserowApiKey, baserowApiUrl);
     
-    // Baserow API returns the created row. We'll enrich it with the full file URLs and a consistent ID.
-    const responseWithUrls = {
-        ...newRow,
-        id: newRow['EU IA'], // Use the primary key value as the consistent ID for the frontend
-        dataRegistrada: dataRegistrada, // Return the original formatted string
-        src: uploadedFileMetadata.map(meta => ({ url: meta.url, name: meta.name })),
+    // Baserow API returns the created row. We'll format it into our StoredImage type for the frontend.
+    // Since one upload operation creates one row with possibly multiple images, we now return an array.
+    const responseForFrontend: StoredImage[] = uploadedFileMetadata.map((meta, index) => ({
+        id: `${newRow['EU IA']}-${index}`,
+        src: meta.url, 
+        alt: meta.name,
         referencia: newRow['REFERÊNCIA'],
         marca: newRow['MARCA'],
-        dia: newRow['DIA'],
+        dia: String(newRow['DIA']),
         mes: newRow['MES'],
-        ano: newRow['ANO'],
-    };
+        ano: String(newRow['ANO']),
+        dataRegistrada: newRow['DATA REGISTRADA'],
+        category: 'default' // default value
+    }));
 
-    return NextResponse.json(responseWithUrls, { status: 201 });
+
+    return NextResponse.json(responseForFrontend, { status: 201 });
 
   } catch (error: any) {
     console.error('Upload failed:', error);
