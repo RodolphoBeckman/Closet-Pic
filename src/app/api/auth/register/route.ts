@@ -1,17 +1,9 @@
 'use server';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { findUserByEmail } from '@/lib/baserow';
+import { findUserByEmail, createRowInTable, getBaserowConfig } from '@/lib/baserow';
 import bcrypt from 'bcryptjs';
-import { createRowInTable } from '@/lib/baserow'; // Usaremos a função genérica
 
-async function createUser(userData: Record<string, any>): Promise<any> {
-    const usersTableId = process.env.ID_DA_TABELA_USERS_BASEROW;
-    if (!usersTableId) {
-        throw new Error("ID da tabela de usuários (ID_DA_TABELA_USERS_BASEROW) não configurado no ambiente.");
-    }
-    return createRowInTable(usersTableId, userData);
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,18 +26,29 @@ export async function POST(req: NextRequest) {
     const uniqueId = `user_${new Date().getTime()}`;
     const now = new Date().toISOString();
     
+    // Get users table ID securely
+    const { usersTableId } = getBaserowConfig();
+     if (!usersTableId) {
+      throw new Error("ID da tabela de usuários não configurado no ambiente.");
+    }
+    
     // IMPORTANT: Keys must match Baserow field names EXACTLY
-    const newUser = await createUser({
+    const newUserPayload = {
       'EU IA': uniqueId,
       'EMAIL': email,
       'PASSWORD': hashedPassword,
       'NAME': name,
       'CREATED_AT': now,
-    });
+    };
 
-    return NextResponse.json({ message: 'Usuário criado com sucesso!', user: { id: newUser.id, name, email } }, { status: 201 });
+    const newUser = await createRowInTable(usersTableId, newUserPayload);
+
+    // Don't send the hashed password back to the client
+    const safeUser = { id: newUser.id, name, email };
+
+    return NextResponse.json({ message: 'Usuário criado com sucesso!', user: safeUser }, { status: 201 });
   } catch (error: any) {
-    console.error('Registration error:', error);
+    console.error('Registration server error:', error);
     return NextResponse.json({ message: 'Ocorreu um erro no servidor.', details: error.message }, { status: 500 });
   }
 }

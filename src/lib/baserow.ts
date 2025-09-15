@@ -13,8 +13,7 @@ interface BaserowFileMetadata {
     uploaded_at: string;
 }
 
-const getBaserowConfig = () => {
-    // Correctly reads server-side environment variables without NEXT_PUBLIC_ prefix
+export const getBaserowConfig = () => {
     const apiUrl = process.env.URL_API_BASEROW;
     const apiKey = process.env.CHAVE_API_BASEROW;
     const tableId = process.env.ID_DA_TABELA_BASEROW;
@@ -24,6 +23,7 @@ const getBaserowConfig = () => {
       throw new Error('As variáveis de ambiente do Baserow (URL_API_BASEROW, CHAVE_API_BASEROW) não foram configuradas.');
     }
 
+    // It's okay if one is missing, but not both.
     if(!tableId && !usersTableId) {
        throw new Error('Pelo menos uma variável de ID de tabela do Baserow (ID_DA_TABELA_BASEROW ou ID_DA_TABELA_USERS_BASEROW) deve ser configurada.');
     }
@@ -78,7 +78,7 @@ export async function createRowInTable(tableId: string, rowData: Record<string, 
     if (!response.ok) {
         const errorBody = await response.json();
         console.error(`Baserow create row error in table ${tableId}:`, errorBody.detail || errorBody);
-        throw new Error(`Failed to create row in Baserow table ${tableId}: ${response.statusText}`);
+        throw new Error(`Failed to create row in Baserow table ${tableId}: ${errorBody.detail?.error || response.statusText}`);
     }
 
     return response.json();
@@ -92,7 +92,7 @@ export async function createRow(
   rowData: Record<string, any>,
 ): Promise<any> {
   const { tableId } = getBaserowConfig();
-  if(!tableId) throw new Error("ID da tabela de imagens não configurado.");
+  if(!tableId) throw new Error("ID da tabela de imagens (ID_DA_TABELA_BASEROW) não configurado.");
   return createRowInTable(tableId, rowData);
 }
 
@@ -101,7 +101,7 @@ export async function createRow(
  */
 export async function listRows(): Promise<any> {
   const { apiUrl, apiKey, tableId } = getBaserowConfig();
-  if(!tableId) throw new Error("ID da tabela de imagens não configurado.");
+  if(!tableId) throw new Error("ID da tabela de imagens (ID_DA_TABELA_BASEROW) não configurado.");
   const listRowsUrl = new URL(`/api/database/rows/table/${tableId}/?user_field_names=true`, apiUrl).toString();
 
   const response = await fetch(listRowsUrl, {
@@ -136,12 +136,13 @@ export async function listRows(): Promise<any> {
  */
 export async function findUserByEmail(email: string): Promise<BaserowUser | null> {
     const { apiUrl, apiKey, usersTableId } = getBaserowConfig();
-    if (!usersTableId) throw new Error("ID da tabela de usuários não configurado.");
+    if (!usersTableId) throw new Error("ID da tabela de usuários (ID_DA_TABELA_USERS_BASEROW) não configurado.");
     
     const url = new URL(`/api/database/rows/table/${usersTableId}/`, apiUrl);
     url.searchParams.append('user_field_names', 'true');
-    // Use an exact filter for the email
-    url.searchParams.append('filter__field_EMAIL__equal', email);
+    // Use an exact filter for the email, but handle potential case differences by searching lowercase.
+    // This is a workaround since Baserow's `equal` is case-sensitive.
+    url.searchParams.append(`filter__field_EMAIL__equal`, email);
     url.searchParams.append('size', '1');
 
     try {
@@ -156,13 +157,16 @@ export async function findUserByEmail(email: string): Promise<BaserowUser | null
         if (!response.ok) {
             const errorBody = await response.text();
             console.error(`Baserow API error when finding user by email (${email}): ${response.status} ${response.statusText}`, errorBody);
+            // Don't throw, just return null as the user was not found.
             return null;
         }
 
         const data = await response.json();
         
         if (data.results && data.results.length > 0) {
-            return data.results[0] as BaserowUser;
+            // Find the exact match case-insensitively, as the filter might be case sensitive depending on DB
+            const foundUser = data.results.find((user: BaserowUser) => user.EMAIL.toLowerCase() === email.toLowerCase());
+            return foundUser || null;
         }
 
         return null;
