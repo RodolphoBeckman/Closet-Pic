@@ -18,15 +18,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Credenciais inválidas.' }, { status: 401 });
     }
     
-    const storedPassword = user.PASSWORD;
-    // Robust check: Ensure the stored password is a non-empty string before comparing.
-    // This handles cases where the field might be null, undefined, false, or an empty string.
-    if (!storedPassword || typeof storedPassword !== 'string') {
-        console.error(`Login attempt for ${email} failed: No valid password stored in database.`);
+    // Check for user.PASSWORD existence before accessing it
+    if (!user.PASSWORD) {
         return NextResponse.json({ message: 'Credenciais inválidas.' }, { status: 401 });
     }
 
-    const passwordsMatch = await bcrypt.compare(password, storedPassword);
+    const passwordsMatch = await bcrypt.compare(password, user.PASSWORD);
 
     if (!passwordsMatch) {
       return NextResponse.json({ message: 'Credenciais inválidas.' }, { status: 401 });

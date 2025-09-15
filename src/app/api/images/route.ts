@@ -59,6 +59,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(allImages, { status: 200 });
   } catch (error: any) {
     console.error('Failed to fetch images from Baserow:', error);
-    return NextResponse.json({ message: error.message || 'An error occurred while fetching images.' }, { status: 400 });
+    return NextResponse.json({ message: error.message || 'An error occurred while fetching images.' }, { status: 500 });
   }
 }

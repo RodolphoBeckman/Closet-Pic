@@ -140,30 +140,40 @@ export async function findUserByEmail(email: string): Promise<BaserowUser | null
     
     const url = new URL(`/api/database/rows/table/${usersTableId}/`, apiUrl);
     url.searchParams.append('user_field_names', 'true');
-    // Add a filter to find the user by email (case-insensitive)
-    url.searchParams.append('filter__field_EMAIL__equal', email.toLowerCase());
-    // Add a filter to ensure the email field is not empty
-    url.searchParams.append('filter__field_EMAIL__is_not_empty', 'true');
-    url.searchParams.append('size', '1'); // We only expect one user
+    // Use an exact (but case-insensitive) filter for the email
+    url.searchParams.append('filter__field_EMAIL__equal', email);
+    url.searchParams.append('size', '1');
 
-    const response = await fetch(url.toString(), {
-        method: 'GET',
-        headers: {
-            'Authorization': `Token ${apiKey}`,
-        },
-        cache: 'no-store',
-    });
+    try {
+        const response = await fetch(url.toString(), {
+            method: 'GET',
+            headers: {
+                'Authorization': `Token ${apiKey}`,
+            },
+            cache: 'no-store',
+        });
 
-    if (!response.ok) {
-        const errorBody = await response.json();
-        console.error('Baserow find user error:', errorBody);
-        throw new Error(`Failed to find user by email: ${response.statusText}`);
+        if (!response.ok) {
+            // If the table or view is not found, Baserow might return a 404.
+            // If the filter is bad, it might be a 400.
+            // We'll log the error and return null as the user was not found.
+            const errorBody = await response.text();
+            console.error(`Baserow API error when finding user by email (${email}): ${response.status} ${response.statusText}`, errorBody);
+            return null;
+        }
+
+        const data = await response.json();
+
+        // If results array exists and has at least one item, return the first one.
+        if (data.results && data.results.length > 0) {
+            return data.results[0] as BaserowUser;
+        }
+
+        // If no results, the user doesn't exist.
+        return null;
+
+    } catch (error) {
+        console.error('Network or other error in findUserByEmail:', error);
+        return null;
     }
-
-    const data = await response.json();
-    if (data.results && data.results.length > 0) {
-        return data.results[0];
-    }
-    
-    return null;
 }
