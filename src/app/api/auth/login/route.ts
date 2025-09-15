@@ -1,11 +1,12 @@
 'use server';
 import { NextRequest, NextResponse } from 'next/server';
-import { findUserByEmail } from '@/lib/baserow';
+import { findUserByEmail, getBaserowConfig } from '@/lib/baserow';
 import { createSession } from '@/lib/session';
 import bcrypt from 'bcryptjs';
 
 export async function POST(req: NextRequest) {
   try {
+    await getBaserowConfig(); // Ensure env vars are loaded and validated
     const { email, password } = await req.json();
 
     if (!email || !password) {
@@ -18,12 +19,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Credenciais inválidas.' }, { status: 401 });
     }
     
+    const storedPassword = user.PASSWORD;
+
     // Check for user.PASSWORD existence and type before accessing it
-    if (!user.PASSWORD || typeof user.PASSWORD !== 'string') {
-        return NextResponse.json({ message: 'Credenciais inválidas.' }, { status: 401 });
+    if (!storedPassword || typeof storedPassword !== 'string') {
+        return NextResponse.json({ message: 'Credenciais inválidas (senha não encontrada ou em formato incorreto).' }, { status: 401 });
     }
 
-    const passwordsMatch = await bcrypt.compare(password, user.PASSWORD);
+    const passwordsMatch = await bcrypt.compare(password, storedPassword);
 
     if (!passwordsMatch) {
       return NextResponse.json({ message: 'Credenciais inválidas.' }, { status: 401 });
@@ -33,8 +36,8 @@ export async function POST(req: NextRequest) {
     await createSession({ name: user.NAME, email: user.EMAIL });
 
     return NextResponse.json({ message: 'Login bem-sucedido!' }, { status: 200 });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Login server error:', error);
-    return NextResponse.json({ message: 'Ocorreu um erro no servidor.' }, { status: 500 });
+    return NextResponse.json({ message: error.message || 'Ocorreu um erro no servidor.' }, { status: 500 });
   }
 }

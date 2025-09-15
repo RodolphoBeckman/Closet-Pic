@@ -1,7 +1,7 @@
 'use server';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { listRows } from '@/lib/baserow';
+import { listRows, getBaserowConfig } from '@/lib/baserow';
 import type { BaserowRow, StoredImage } from '@/types';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -51,6 +51,7 @@ function transformBaserowRowToStoredImage(row: BaserowRow): StoredImage[] {
 
 export async function GET(req: NextRequest) {
   try {
+    await getBaserowConfig(); // Ensure env vars are loaded and validated
     const rows: BaserowRow[] = await listRows();
     
     // Each row from Baserow might contain multiple images. We use flatMap to flatten them into a single array.

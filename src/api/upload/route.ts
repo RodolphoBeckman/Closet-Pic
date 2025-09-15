@@ -1,7 +1,7 @@
 'use server';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createRow, uploadFile } from '@/lib/baserow';
+import { createRow, uploadFile, getBaserowConfig } from '@/lib/baserow';
 import type { StoredImage } from '@/types';
 
 // Baserow has a file size limit of 5MB on the free plan. We set it a bit lower.
@@ -11,6 +11,7 @@ const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 export async function POST(req: NextRequest) {
   try {
+    await getBaserowConfig(); // Ensure env vars are loaded and validated
     const formData = await req.formData();
     const files = formData.getAll('files') as File[];
     const referencia = formData.get('referencia') as string;

@@ -7,6 +7,7 @@ import bcrypt from 'bcryptjs';
 
 export async function POST(req: NextRequest) {
   try {
+    const { usersTableId } = await getBaserowConfig(); // Ensure env vars are loaded and validated
     const { name, email, password } = await req.json();
 
     if (!name || !email || !password) {
@@ -26,12 +27,6 @@ export async function POST(req: NextRequest) {
     const uniqueId = `user_${new Date().getTime()}`;
     const now = new Date().toISOString();
     
-    // Get users table ID securely
-    const { usersTableId } = await getBaserowConfig();
-     if (!usersTableId) {
-      throw new Error("ID da tabela de usuários não configurado no ambiente.");
-    }
-    
     // IMPORTANT: Keys must match Baserow field names EXACTLY
     const newUserPayload = {
       'EU IA': uniqueId,
@@ -49,6 +44,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: 'Usuário criado com sucesso!', user: safeUser }, { status: 201 });
   } catch (error: any) {
     console.error('Registration server error:', error);
-    return NextResponse.json({ message: 'Ocorreu um erro no servidor.', details: error.message }, { status: 500 });
+    return NextResponse.json({ message: error.message || 'Ocorreu um erro no servidor.' }, { status: 500 });
   }
 }

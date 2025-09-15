@@ -21,13 +21,8 @@ export async function getBaserowConfig() {
     const tableId = process.env.ID_DA_TABELA_BASEROW;
     const usersTableId = process.env.ID_DA_TABELA_USERS_BASEROW;
 
-    if (!apiKey || !apiUrl) {
-      throw new Error('As variáveis de ambiente do Baserow (URL_API_BASEROW, CHAVE_API_BASEROW) não foram configuradas.');
-    }
-
-    // It's okay if one is missing, but not both.
-    if(!tableId && !usersTableId) {
-       throw new Error('Pelo menos uma variável de ID de tabela do Baserow (ID_DA_TABELA_BASEROW ou ID_DA_TABELA_USERS_BASEROW) deve ser configurada.');
+    if (!apiUrl || !apiKey || !tableId || !usersTableId) {
+      throw new Error('Uma ou mais variáveis de ambiente do Baserow não foram configuradas. Verifique URL_API_BASEROW, CHAVE_API_BASEROW, ID_DA_TABELA_BASEROW e ID_DA_TABELA_USERS_BASEROW.');
     }
 
     return { apiUrl, apiKey, tableId, usersTableId };
@@ -94,7 +89,6 @@ export async function createRow(
   rowData: Record<string, any>,
 ): Promise<any> {
   const { tableId } = await getBaserowConfig();
-  if(!tableId) throw new Error("ID da tabela de imagens (ID_DA_TABELA_BASEROW) não configurado.");
   return createRowInTable(tableId, rowData);
 }
 
@@ -103,7 +97,6 @@ export async function createRow(
  */
 export async function listRows(): Promise<any> {
   const { apiUrl, apiKey, tableId } = await getBaserowConfig();
-  if(!tableId) throw new Error("ID da tabela de imagens (ID_DA_TABELA_BASEROW) não configurado.");
   const listRowsUrl = new URL(`/api/database/rows/table/${tableId}/?user_field_names=true`, apiUrl).toString();
 
   const response = await fetch(listRowsUrl, {
@@ -138,7 +131,6 @@ export async function listRows(): Promise<any> {
  */
 export async function findUserByEmail(email: string): Promise<BaserowUser | null> {
     const { apiUrl, apiKey, usersTableId } = await getBaserowConfig();
-    if (!usersTableId) throw new Error("ID da tabela de usuários (ID_DA_TABELA_USERS_BASEROW) não configurado.");
     
     const url = new URL(`/api/database/rows/table/${usersTableId}/`, apiUrl);
     url.searchParams.append('user_field_names', 'true');
