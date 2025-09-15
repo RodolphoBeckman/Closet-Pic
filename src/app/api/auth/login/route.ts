@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     // The password from Baserow might be undefined if the column is empty
     const storedPassword = user.PASSWORD;
     if(!storedPassword) {
-        return NextResponse.json({ message: 'Conta não possui senha configurada.' }, { status: 401 });
+        return NextResponse.json({ message: 'A conta de usuário não possui uma senha configurada no banco de dados.' }, { status: 401 });
     }
 
     const passwordsMatch = await bcrypt.compare(password, storedPassword);

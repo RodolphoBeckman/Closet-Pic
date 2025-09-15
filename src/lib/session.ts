@@ -7,9 +7,17 @@ import type { UserSession } from '@/types';
 const cookieName = 'session';
 
 function getSecretKey() {
-  const secretKey = process.env.SESSION_SECRET;
+  let secretKey = process.env.SESSION_SECRET;
+
+  // IMPORTANT: This is an insecure fallback for local development ONLY.
+  // A secure, unique SESSION_SECRET must be set in the production environment.
   if (!secretKey) {
-    throw new Error('A variável de ambiente SESSION_SECRET não foi definida.');
+    secretKey = 'insecure-fallback-secret-for-development-only-must-be-changed-in-production';
+    console.warn(
+      'ADVERTÊNCIA: A variável de ambiente SESSION_SECRET não foi definida. ' +
+      'Usando uma chave de fallback insegura apenas para desenvolvimento local. ' +
+      'É crucial definir uma chave secreta forte e única no seu ambiente de produção (ex: Vercel).'
+    );
   }
   return new TextEncoder().encode(secretKey);
 }
