@@ -71,7 +71,7 @@ export default function LoginPage() {
         });
 
         // Force a full page reload to ensure layout gets the new session
-        window.location.href = searchParams.get('from') || '/';
+        window.location.href = '/';
 
       } catch (error: any) {
         toast({
