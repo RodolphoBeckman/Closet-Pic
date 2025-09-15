@@ -132,16 +132,6 @@ export async function listRows(): Promise<any> {
 // --- User Authentication Functions ---
 
 /**
- * Creates a new user in the Users table.
- */
-export async function createUser(userData: Omit<BaserowUser, 'id' | 'created_at'>): Promise<BaserowUser> {
-    const { usersTableId } = getBaserowConfig();
-    if (!usersTableId) throw new Error("ID da tabela de usuários não configurado.");
-    
-    return createRowInTable(usersTableId, userData);
-}
-
-/**
  * Finds a user by their email address.
  */
 export async function findUserByEmail(email: string): Promise<BaserowUser | null> {
@@ -151,7 +141,7 @@ export async function findUserByEmail(email: string): Promise<BaserowUser | null
     const url = new URL(`/api/database/rows/table/${usersTableId}/`, apiUrl);
     url.searchParams.append('user_field_names', 'true');
     // Add a filter to find the user by email
-    url.searchParams.append('filter__field_email__equal', email);
+    url.searchParams.append('filter__field_EMAIL__equal', email);
     url.searchParams.append('size', '1'); // We only expect one user
 
     const response = await fetch(url.toString(), {

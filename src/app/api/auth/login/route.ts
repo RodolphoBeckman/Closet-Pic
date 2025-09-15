@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     }
     
     // The password from Baserow might be undefined if the column is empty
-    const storedPassword = user.password;
+    const storedPassword = user.PASSWORD;
     if(!storedPassword) {
         return NextResponse.json({ message: 'Conta não possui senha configurada.' }, { status: 401 });
     }
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Create session
-    await createSession({ name: user.name, email: user.email });
+    await createSession({ name: user.NAME, email: user.EMAIL });
 
     return NextResponse.json({ message: 'Login bem-sucedido!' }, { status: 200 });
   } catch (error) {
