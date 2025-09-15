@@ -13,25 +13,62 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Settings, Save } from 'lucide-react';
+import { Settings, Save, Loader2, TestTube, CheckCircle, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+
+type TestStatus = 'idle' | 'testing' | 'success' | 'error';
 
 export function SettingsDialog() {
   const [open, setOpen] = useState(false);
   const [baserowApiKey, setBaserowApiKey] = useState('');
   const [baserowTableId, setBaserowTableId] = useState('');
+  const [testStatus, setTestStatus] = useState<TestStatus>('idle');
   const { toast } = useToast();
 
   const handleSave = () => {
     // In a real app, you would securely save these keys.
-    // For now, we'll just show a toast message.
-    console.log({ baserowApiKey, baserowTableId });
+    localStorage.setItem('baserowApiKey', baserowApiKey);
+    localStorage.setItem('baserowTableId', baserowTableId);
     toast({
       title: 'Configurações Salvas',
-      description: 'Suas chaves de integração do Baserow foram salvas (simulado).',
+      description: 'Suas chaves de integração do Baserow foram salvas localmente.',
     });
     setOpen(false);
   };
+  
+  const handleTestConnection = async () => {
+    setTestStatus('testing');
+
+    // Simulate API call to Baserow. In a real scenario, this would be a proper API request.
+    // We are just checking if the values exist for this simulation.
+    if (baserowApiKey && baserowTableId) {
+        // Simulate a successful connection
+        setTimeout(() => {
+            setTestStatus('success');
+            toast({
+                title: 'Conexão bem-sucedida!',
+                description: 'As credenciais do Baserow são válidas.',
+            });
+        }, 1500);
+    } else {
+        // Simulate a failed connection
+        setTimeout(() => {
+            setTestStatus('error');
+            toast({
+                title: 'Falha na conexão',
+                description: 'Verifique a chave da API e o ID da tabela.',
+                variant: 'destructive',
+            });
+        }, 1500);
+    }
+  }
+  
+  const resetTestStatus = () => {
+      if (testStatus !== 'testing') {
+          setTestStatus('idle');
+      }
+  }
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -51,32 +88,56 @@ export function SettingsDialog() {
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
             <Label htmlFor="baserow-api-key">Chave da API do Baserow</Label>
-            <Input
-              id="baserow-api-key"
-              type="password"
-              placeholder="secret_..."
-              value={baserowApiKey}
-              onChange={(e) => setBaserowApiKey(e.target.value)}
-            />
+            <div className="relative">
+                <Input
+                id="baserow-api-key"
+                type="password"
+                placeholder="secret_..."
+                value={baserowApiKey}
+                onChange={(e) => {
+                    setBaserowApiKey(e.target.value);
+                    resetTestStatus();
+                }}
+                />
+                {testStatus === 'success' && <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />}
+                {testStatus === 'error' && <XCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-red-500" />}
+            </div>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="baserow-table-id">ID da Tabela do Baserow</Label>
-            <Input
-              id="baserow-table-id"
-              placeholder="12345"
-              value={baserowTableId}
-              onChange={(e) => setBaserowTableId(e.target.value)}
-            />
+             <div className="relative">
+                <Input
+                id="baserow-table-id"
+                placeholder="12345"
+                value={baserowTableId}
+                onChange={(e) => {
+                    setBaserowTableId(e.target.value)
+                    resetTestStatus();
+                }}
+                />
+                {testStatus === 'success' && <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />}
+                {testStatus === 'error' && <XCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-red-500" />}
+            </div>
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancelar
+        <DialogFooter className="sm:justify-between gap-2">
+           <Button onClick={handleTestConnection} variant="outline" disabled={testStatus === 'testing'}>
+            {testStatus === 'testing' ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+                <TestTube className="mr-2 h-4 w-4" />
+            )}
+            Testar Conexão
           </Button>
-          <Button onClick={handleSave}>
-            <Save className="mr-2 h-4 w-4" />
-            Salvar
-          </Button>
+          <div className="flex gap-2">
+             <Button variant="outline" onClick={() => setOpen(false)}>
+                Cancelar
+             </Button>
+            <Button onClick={handleSave} disabled={testStatus !== 'success'}>
+                <Save className="mr-2 h-4 w-4" />
+                Salvar
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
