@@ -140,8 +140,10 @@ export async function findUserByEmail(email: string): Promise<BaserowUser | null
     
     const url = new URL(`/api/database/rows/table/${usersTableId}/`, apiUrl);
     url.searchParams.append('user_field_names', 'true');
-    // Add a filter to find the user by email
-    url.searchParams.append('filter__field_EMAIL__equal', email);
+    // Add a filter to find the user by email (case-insensitive)
+    url.searchParams.append('filter__field_EMAIL__contains_i', email);
+    // Add a filter to ensure the email field is not empty
+    url.searchParams.append('filter__field_EMAIL__is_not_empty', 'true');
     url.searchParams.append('size', '1'); // We only expect one user
 
     const response = await fetch(url.toString(), {
@@ -159,8 +161,14 @@ export async function findUserByEmail(email: string): Promise<BaserowUser | null
     }
 
     const data = await response.json();
-    if (data.results && data.results.length > 0) {
-        return data.results[0];
+    // Since 'contains_i' can match parts of emails, we need to double-check
+    // for an exact match, but case-insensitively.
+    const matchingUser = data.results.find(
+      (user: BaserowUser) => user.EMAIL.toLowerCase() === email.toLowerCase()
+    );
+
+    if (matchingUser) {
+      return matchingUser;
     }
     
     return null;
