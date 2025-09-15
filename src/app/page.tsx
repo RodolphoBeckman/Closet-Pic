@@ -3,10 +3,10 @@
 import { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { FileImage, Upload, LayoutGrid, List, Loader2 } from 'lucide-react';
+import { FileImage, Upload, LayoutGrid, List, Loader2, BarChart } from 'lucide-react';
 import Header from '@/components/header';
 import { ImageUploadDialog } from '@/components/image-upload-dialog';
-import type { StoredImage, GroupedImage, GalleryGroupedImage } from '@/types';
+import type { StoredImage, GroupedImage, GalleryGroupedImage, ChartData } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
@@ -26,12 +26,13 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { ImageViewer } from '@/components/image-viewer';
 import { GalleryView } from '@/components/gallery-view';
+import { ChartView } from '@/components/chart-view';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Settings } from 'lucide-react';
 
 
-type ViewMode = 'table' | 'gallery';
+type ViewMode = 'table' | 'gallery' | 'chart';
 
 export default function Home() {
   const [images, setImages] = useState<StoredImage[]>([]);
@@ -131,6 +132,25 @@ export default function Home() {
     return filtered;
   }, [images, searchQuery, dateRange]);
 
+  const chartData: ChartData[] = useMemo(() => {
+    const dataByBrand = filteredImages.reduce((acc, image) => {
+      const brand = image.marca || 'Sem Marca';
+      const ref = image.referencia;
+      if (ref) {
+        if (!acc[brand]) {
+          acc[brand] = new Set<string>();
+        }
+        acc[brand].add(ref);
+      }
+      return acc;
+    }, {} as Record<string, Set<string>>);
+
+    return Object.entries(dataByBrand).map(([brand, references]) => ({
+      marca: brand,
+      referencias: references.size,
+    }));
+  }, [filteredImages]);
+
 
   const tableGroupedImages: GroupedImage[] = useMemo(() => {
     const grouped: { [key: string]: GroupedImage } = filteredImages.reduce((acc, image) => {
@@ -201,6 +221,62 @@ export default function Home() {
   const noImages = !isLoading && images.length === 0 && !configError;
   const noFilteredResults = !noImages && filteredImages.length === 0;
 
+  const renderContent = () => {
+    if (viewMode === 'table') {
+        return (
+            <div className="rounded-lg border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Referência</TableHead>
+                      <TableHead>Marca</TableHead>
+                      <TableHead>Fotos</TableHead>
+                      <TableHead>Data registrada</TableHead>
+                      <TableHead>Dia</TableHead>
+                      <TableHead>Mês</TableHead>
+                      <TableHead>Ano</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {tableGroupedImages.map((group) => (
+                      <TableRow key={group.groupKey}>
+                        <TableCell>{group.referencia}</TableCell>
+                        <TableCell><Badge variant="outline">{group.marca || '-'}</Badge></TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {group.images.map(image => (
+                              <button key={image.id} onClick={() => setSelectedImage(image.id)} className="focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md">
+                                <Image
+                                  src={image.src}
+                                  alt={image.alt}
+                                  width={40}
+                                  height={40}
+                                  className="rounded-md object-cover cursor-pointer"
+                                />
+                              </button>
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell>{group.dataRegistrada || '-'}</TableCell>
+                        <TableCell>{group.dia || '-'}</TableCell>
+                        <TableCell className="capitalize">{group.mes || '-'}</TableCell>
+                        <TableCell>{group.ano || '-'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+            </div>
+        );
+    }
+    if (viewMode === 'gallery') {
+        return <GalleryView imageGroups={galleryGroupedImages} onImageClick={(id) => setSelectedImage(id)} />;
+    }
+    if (viewMode === 'chart') {
+        return <ChartView data={chartData} />;
+    }
+    return null;
+  }
+
   return (
     <div className="flex min-h-screen w-full flex-col bg-gradient-to-br from-background-start to-background-end">
       <Header />
@@ -257,14 +333,18 @@ export default function Home() {
             <Button variant="ghost" onClick={clearFilters}>Limpar filtros</Button>
             )}
             <div className="flex items-center gap-2 ml-auto">
-            <Button variant={viewMode === 'table' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('table')}>
-                <List className="h-5 w-5" />
-                <span className="sr-only">Table View</span>
-            </Button>
-            <Button variant={viewMode === 'gallery' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('gallery')}>
-                <LayoutGrid className="h-5 w-5" />
-                <span className="sr-only">Gallery View</span>
-            </Button>
+                <Button variant={viewMode === 'table' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('table')}>
+                    <List className="h-5 w-5" />
+                    <span className="sr-only">Table View</span>
+                </Button>
+                <Button variant={viewMode === 'gallery' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('gallery')}>
+                    <LayoutGrid className="h-5 w-5" />
+                    <span className="sr-only">Gallery View</span>
+                </Button>
+                <Button variant={viewMode === 'chart' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('chart')}>
+                    <BarChart className="h-5 w-5" />
+                    <span className="sr-only">Chart View</span>
+                </Button>
             </div>
           </div>
           {isLoading ? (
@@ -303,55 +383,7 @@ export default function Home() {
                  Tente um filtro diferente ou limpe a seleção.
               </p>
             </div>
-          ) : viewMode === 'table' ? (
-              <div className="rounded-lg border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Referência</TableHead>
-                      <TableHead>Marca</TableHead>
-                      <TableHead>Fotos</TableHead>
-                      <TableHead>Data registrada</TableHead>
-                      <TableHead>Dia</TableHead>
-                      <TableHead>Mês</TableHead>
-                      <TableHead>Ano</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {tableGroupedImages.map((group) => (
-                      <TableRow key={group.groupKey}>
-                        <TableCell>{group.referencia}</TableCell>
-                        <TableCell><Badge variant="outline">{group.marca || '-'}</Badge></TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {group.images.map(image => (
-                              <button key={image.id} onClick={() => setSelectedImage(image.id)} className="focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md">
-                                <Image
-                                  src={image.src}
-                                  alt={image.alt}
-                                  width={40}
-                                  height={40}
-                                  className="rounded-md object-cover cursor-pointer"
-                                />
-                              </button>
-                            ))}
-                          </div>
-                        </TableCell>
-                        <TableCell>{group.dataRegistrada || '-'}</TableCell>
-                        <TableCell>{group.dia || '-'}</TableCell>
-                        <TableCell className="capitalize">{group.mes || '-'}</TableCell>
-                        <TableCell>{group.ano || '-'}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            ) : (
-                <GalleryView
-                    imageGroups={galleryGroupedImages}
-                    onImageClick={(id) => setSelectedImage(id)}
-                />
-            )}
+          ) : renderContent()}
         </div>
       </main>
       

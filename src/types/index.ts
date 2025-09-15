@@ -44,3 +44,8 @@ export interface BaserowRow {
     'ALT'?: string;
     [key: string]: any; // Allow other properties
 }
+
+export interface ChartData {
+  marca: string;
+  referencias: number;
+}
