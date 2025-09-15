@@ -2,6 +2,7 @@
 
 import { Camera } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
+import { SettingsDialog } from './settings-dialog';
 
 export default function Header() {
   return (
@@ -13,8 +14,9 @@ export default function Header() {
             <span className="font-bold sm:inline-block bg-gradient-to-r from-primary to-purple-500 text-transparent bg-clip-text drop-shadow-[0_0_0.3rem_#ffffff40]">ClosetPic</span>
           </a>
         </div>
-        <nav className="flex items-center">
+        <nav className="flex items-center gap-2">
             <ThemeToggle />
+            <SettingsDialog />
         </nav>
       </div>
     </header>
