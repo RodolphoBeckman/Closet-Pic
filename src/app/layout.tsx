@@ -1,3 +1,4 @@
+
 'use client';
 import type {Metadata} from 'next';
 import './globals.css';
@@ -33,41 +34,47 @@ export default function RootLayout({
       document.body.style.setProperty('--mouse-x', `${e.clientX}px`);
       document.body.style.setProperty('--mouse-y', `${e.clientY}px`);
     };
-
     window.addEventListener('mousemove', handleMouseMove);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);
 
-    // Fetch user session data
-    fetch('/api/auth/session').then(res => res.json()).then(data => {
+  useEffect(() => {
+    let isMounted = true;
+    
+    async function checkSession() {
+      const response = await fetch('/api/auth/session');
+      if (!isMounted) return;
+
+      const data = await response.json();
       const sessionUser = data.session || null;
+      
       setUser(sessionUser);
       setLoadingSession(false);
-
+      
       const isProtectedRoute = protectedRoutes.includes(pathname);
       const isPublicRoute = publicRoutes.includes(pathname);
 
       if (isProtectedRoute && !sessionUser) {
         router.push('/login');
-      }
-
-      if (isPublicRoute && sessionUser) {
+      } else if (isPublicRoute && sessionUser) {
         router.push('/');
       }
+    }
 
-    });
-
-
+    checkSession();
+    
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-    };
+        isMounted = false;
+    }
   }, [pathname, router]);
 
   if (loadingSession) {
-    // Você pode renderizar um skeleton/spinner de página inteira aqui
     return (
        <html lang="en" suppressHydrationWarning>
         <body>
           <div className="flex items-center justify-center min-h-screen">
-            {/* Opcional: adicione um spinner de carregamento aqui */}
           </div>
         </body>
       </html>
