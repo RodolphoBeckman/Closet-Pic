@@ -19,7 +19,6 @@ export async function POST(req: NextRequest) {
     const mes = formData.get('mes') as string;
     const ano = formData.get('ano') as string;
     const dataRegistrada = formData.get('dataRegistrada') as string;
-   
 
     if (!files || files.length === 0) {
       return NextResponse.json({ message: 'No files to upload.' }, { status: 400 });
@@ -75,8 +74,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(responseForFrontend, { status: 201 });
 
-  } catch (error: any)
-   {
+  } catch (error: any) {
     console.error('Upload failed:', error);
     // Be more specific about the error if it's a config issue
      if (error.message.includes('variáveis de ambiente')) {
