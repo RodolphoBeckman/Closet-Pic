@@ -67,8 +67,8 @@ export default function LoginPage() {
           description: 'Redirecionando...',
         });
         
-        // Force a full page reload to the home page.
-        // This is the most robust way to ensure the middleware runs with the new session cookie.
+        // Força um recarregamento completo da página para a home.
+        // Este é o método mais robusto para garantir que o middleware seja executado com o novo cookie de sessão.
         window.location.href = '/';
 
       } catch (error: any) {
