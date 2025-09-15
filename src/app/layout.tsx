@@ -36,8 +36,6 @@ export default function RootLayout({
   }, []);
 
   useEffect(() => {
-    // Only run this check if we're not on a public route.
-    // Public routes don't need a session check initially.
     const publicRoutes = ['/login', '/register'];
     const isPublicRoute = publicRoutes.includes(pathname);
 
