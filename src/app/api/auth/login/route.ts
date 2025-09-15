@@ -19,11 +19,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Credenciais inválidas.' }, { status: 401 });
     }
     
+    // The password field name in Baserow is 'PASSWORD'
     const storedPassword = user.PASSWORD;
 
     // Check for user.PASSWORD existence and type before accessing it
     if (!storedPassword || typeof storedPassword !== 'string') {
-        return NextResponse.json({ message: 'Credenciais inválidas (senha não encontrada ou em formato incorreto).' }, { status: 401 });
+        return NextResponse.json({ message: 'Credenciais inválidas.' }, { status: 401 });
     }
 
     const passwordsMatch = await bcrypt.compare(password, storedPassword);
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Credenciais inválidas.' }, { status: 401 });
     }
 
-    // Create session
+    // Create session. The user name field is 'NAME'
     await createSession({ name: user.NAME, email: user.EMAIL });
 
     return NextResponse.json({ message: 'Login bem-sucedido!' }, { status: 200 });

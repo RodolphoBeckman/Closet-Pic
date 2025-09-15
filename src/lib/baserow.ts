@@ -134,9 +134,8 @@ export async function findUserByEmail(email: string): Promise<BaserowUser | null
     
     const url = new URL(`/api/database/rows/table/${usersTableId}/`, apiUrl);
     url.searchParams.append('user_field_names', 'true');
-    // Use an exact filter for the email, but handle potential case differences by searching lowercase.
-    // This is a workaround since Baserow's `equal` is case-sensitive.
-    url.searchParams.append(`filter__field_EMAIL__equal`, email);
+    // Use `contains` for case-insensitive search
+    url.searchParams.append(`filter__field_EMAIL__contains`, email);
     url.searchParams.append('size', '1');
 
     try {
@@ -158,7 +157,7 @@ export async function findUserByEmail(email: string): Promise<BaserowUser | null
         const data = await response.json();
         
         if (data.results && data.results.length > 0) {
-            // Find the exact match case-insensitively, as the filter might be case sensitive depending on DB
+            // The `contains` filter can return partial matches, so we need to find the exact match case-insensitively.
             const foundUser = data.results.find((user: BaserowUser) => user.EMAIL.toLowerCase() === email.toLowerCase());
             return foundUser || null;
         }
