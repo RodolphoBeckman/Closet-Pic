@@ -306,7 +306,7 @@ export default function Home() {
   }
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-gradient-to-br from-background-start to-background-end">
+    <div className="flex min-h-screen w-full flex-col bg-background">
       <Header />
       <main className="flex-1">
         <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8 max-w-7xl">
