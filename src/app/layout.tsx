@@ -7,7 +7,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { useEffect, useState } from 'react';
 import type { UserSession } from '@/types';
 import Header from '@/components/header';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 // export const metadata: Metadata = {
 //   title: 'ClosetPic',
@@ -22,6 +22,7 @@ export default function RootLayout({
   const [user, setUser] = useState<UserSession | null>(null);
   const [loading, setLoading] = useState(true);
   const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -34,45 +35,67 @@ export default function RootLayout({
     };
   }, []);
 
-  // Fetch session data to display in the Header.
-  // The middleware is now responsible for all route protection.
   useEffect(() => {
-    async function fetchSession() {
-      // Only fetch session if not on a public page, as it's not needed there.
-      if (!['/login', '/register'].includes(pathname)) {
+    const publicRoutes = ['/login', '/register'];
+    const isPublicRoute = publicRoutes.includes(pathname);
+    
+    async function checkSession() {
         try {
           const response = await fetch('/api/auth/session');
           if (response.ok) {
             const data = await response.json();
-            setUser(data.session || null);
+            const sessionUser = data.session || null;
+            setUser(sessionUser);
+
+            // Se o usuário está em uma rota pública mas tem uma sessão, redirecione para a home.
+            if (isPublicRoute && sessionUser?.email) {
+              router.push('/');
+              return; // Para a execução para evitar que o setLoading(false) seja chamado prematuramente.
+            }
+            // Se o usuário está em uma rota protegida e não tem sessão, redirecione para o login.
+            if (!isPublicRoute && !sessionUser?.email) {
+              router.push('/login');
+              return;
+            }
+            
           } else {
              setUser(null);
+             if (!isPublicRoute) {
+                router.push('/login');
+                return;
+             }
           }
         } catch (error) {
           console.error("Failed to fetch session:", error);
           setUser(null);
+          if(!isPublicRoute) {
+            router.push('/login');
+            return;
+          }
+        } finally {
+            // Apenas para de carregar quando todas as verificações e redirecionamentos potenciais terminarem.
+            setLoading(false);
         }
-      }
-      setLoading(false);
     }
-    fetchSession();
-  }, [pathname]);
+    
+    checkSession();
+  }, [pathname, router]);
 
   const isPublicPage = ['/login', '/register'].includes(pathname);
 
-  // Render a full-page loader while the session is being checked on protected pages.
-  // This prevents flashes of content. The middleware handles the redirect logic.
-  if (loading && !isPublicPage) {
+  // Renderiza um loader de tela cheia enquanto a sessão está sendo verificada.
+  if (loading) {
      return (
        <html lang="en" suppressHydrationWarning>
         <body className="font-body antialiased">
           <div className="flex items-center justify-center min-h-screen bg-background">
-            {/* You can place a more sophisticated loader/spinner here */}
+            {/* Você pode colocar um loader/spinner mais sofisticado aqui */}
           </div>
         </body>
       </html>
     )
   }
+
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -103,7 +126,6 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {/* The Header is only displayed on non-public pages */}
           {!isPublicPage && <Header user={user} />}
           {children}
           <Toaster />

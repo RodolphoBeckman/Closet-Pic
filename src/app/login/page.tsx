@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -38,7 +37,6 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
-  const router = useRouter();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
 
@@ -69,8 +67,8 @@ export default function LoginPage() {
           description: 'Redirecionando...',
         });
 
-        // Força um recarregamento completo da página para a rota principal.
-        // Isso garante que o middleware seja executado com o novo cookie de sessão.
+        // Força um recarregamento completo para a rota principal.
+        // Isso garante que o RootLayout seja renderizado do zero com o novo cookie.
         window.location.assign('/');
 
       } catch (error: any) {
