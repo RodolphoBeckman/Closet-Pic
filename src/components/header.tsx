@@ -2,7 +2,6 @@
 
 import Image from 'next/image';
 import { ThemeToggle } from './theme-toggle';
-import { SettingsDialog } from './settings-dialog';
 
 export default function Header() {
   return (
@@ -17,7 +16,6 @@ export default function Header() {
         </div>
         <nav className="flex-1 flex items-center justify-end gap-2">
             <ThemeToggle />
-            <SettingsDialog />
         </nav>
       </div>
     </header>

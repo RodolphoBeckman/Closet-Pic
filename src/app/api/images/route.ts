@@ -50,17 +50,8 @@ function transformBaserowRowToStoredImage(row: BaserowRow): StoredImage[] {
 
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const apiUrl = searchParams.get('apiUrl');
-  const apiKey = searchParams.get('apiKey');
-  const tableId = searchParams.get('tableId');
-
-  if (!apiKey || !tableId || !apiUrl) {
-    return NextResponse.json({ message: 'Baserow API URL, Key or Table ID are missing.' }, { status: 400 });
-  }
-
   try {
-    const rows: BaserowRow[] = await listRows(tableId, apiKey, apiUrl);
+    const rows: BaserowRow[] = await listRows();
     
     // Each row from Baserow might contain multiple images. We use flatMap to flatten them into a single array.
     const allImages: StoredImage[] = rows.flatMap(transformBaserowRowToStoredImage);
@@ -68,6 +59,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(allImages, { status: 200 });
   } catch (error: any) {
     console.error('Failed to fetch images from Baserow:', error);
-    return NextResponse.json({ message: 'An error occurred while fetching images.', details: error.message }, { status: 500 });
+    return NextResponse.json({ message: error.message || 'An error occurred while fetching images.' }, { status: 400 });
   }
 }

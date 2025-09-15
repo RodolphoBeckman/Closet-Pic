@@ -27,6 +27,9 @@ import { Badge } from '@/components/ui/badge';
 import { ImageViewer } from '@/components/image-viewer';
 import { GalleryView } from '@/components/gallery-view';
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Settings } from 'lucide-react';
+
 
 type ViewMode = 'table' | 'gallery';
 
@@ -37,28 +40,27 @@ export default function Home() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('table');
+  const [configError, setConfigError] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     const fetchImages = async () => {
-      const baserowApiUrl = localStorage.getItem('baserowApiUrl');
-      const baserowApiKey = localStorage.getItem('baserowApiKey');
-      const baserowTableId = localStorage.getItem('baserowTableId');
-
-      if (!baserowApiKey || !baserowTableId || !baserowApiUrl) {
-          setIsLoading(false);
-          // Don't toast here, it can be annoying on first load
-          return;
-      }
-      
+      setIsLoading(true);
       try {
-        const response = await fetch(`/api/images?apiUrl=${encodeURIComponent(baserowApiUrl)}&apiKey=${encodeURIComponent(baserowApiKey)}&tableId=${encodeURIComponent(baserowTableId)}`);
+        const response = await fetch('/api/images');
 
         if (!response.ok) {
-            const errorData = await response.json();
+          const errorData = await response.json();
+          // Special check for config error
+          if (response.status === 400 && errorData.message.includes('Baserow environment variables')) {
+             setConfigError(errorData.message);
+          } else {
             throw new Error(errorData.message || 'Failed to fetch images.');
+          }
+          return; // Stop processing if there was an error
         }
 
+        setConfigError(null); // Clear any previous config error
         const data: StoredImage[] = await response.json();
         setImages(data);
       } catch (error: any) {
@@ -192,7 +194,7 @@ export default function Home() {
     return allImages.find(img => img.id === selectedImage) || null;
   }, [selectedImage, images]);
 
-  const noImages = !isLoading && images.length === 0;
+  const noImages = !isLoading && images.length === 0 && !configError;
   const noFilteredResults = !noImages && filteredImages.length === 0;
 
   return (
@@ -265,6 +267,14 @@ export default function Home() {
             <div className="flex justify-center items-center py-24">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
             </div>
+          ) : configError ? (
+            <Alert variant="destructive" className="mt-8">
+              <Settings className="h-4 w-4" />
+              <AlertTitle>Erro de Configuração</AlertTitle>
+              <AlertDescription>
+                {configError} Por favor, verifique o seu ficheiro `.env` se estiver a correr localmente, ou as suas variáveis de ambiente na sua plataforma de alojamento (ex: Vercel).
+              </AlertDescription>
+            </Alert>
           ) : noImages ? (
              <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 py-24 text-center mt-8">
                 <div className="flex justify-center items-center">

@@ -117,19 +117,6 @@ export function ImageUploadDialog({ onImagesUploaded, children, open: controlled
       return;
     }
     
-    const baserowApiUrl = localStorage.getItem('baserowApiUrl');
-    const baserowApiKey = localStorage.getItem('baserowApiKey');
-    const baserowTableId = localStorage.getItem('baserowTableId');
-
-    if (!baserowApiKey || !baserowTableId || !baserowApiUrl) {
-        toast({
-            title: 'Configuração Incompleta',
-            description: 'Por favor, configure a URL, a API Key e o Table ID do Baserow nas configurações.',
-            variant: 'destructive',
-        });
-        return;
-    }
-
     startTransition(async () => {
         let totalFiles = 0;
         let hasError = false;
@@ -139,7 +126,7 @@ export function ImageUploadDialog({ onImagesUploaded, children, open: controlled
             const dia = format(today, 'dd');
             const mes = format(today, 'LLLL', { locale: ptBR });
             const ano = format(today, 'yyyy');
-            const dataRegistrada = format(today, "dd 'de' MMMM 'de' yyyy HH:mm", { locale: ptBR });
+            const dataRegistrada = today.toISOString();
 
 
             const formData = new FormData();
@@ -150,10 +137,7 @@ export function ImageUploadDialog({ onImagesUploaded, children, open: controlled
             formData.append('mes', mes);
             formData.append('ano', ano);
             formData.append('dataRegistrada', dataRegistrada);
-            formData.append('baserowApiUrl', baserowApiUrl);
-            formData.append('baserowApiKey', baserowApiKey);
-            formData.append('baserowTableId', baserowTableId);
-
+            
             try {
                 const response = await fetch('/api/upload', {
                     method: 'POST',
@@ -162,12 +146,19 @@ export function ImageUploadDialog({ onImagesUploaded, children, open: controlled
 
                 if (!response.ok) {
                     const errorData = await response.json();
-                    throw new Error(`Falha no upload para ref ${group.referencia}: ${errorData.message}`);
+                    throw new Error(`Falha no upload para ref ${group.referencia}: ${errorData.message || 'Erro desconhecido'}`);
                 }
 
-                const newImages: StoredImage[] = await response.json();
+                const newImageGroup: StoredImage[] = await response.json();
+
+                // The API returns the date as an ISO string, format it for immediate display.
+                const uploadedImages = newImageGroup.map(img => ({
+                  ...img,
+                  dataRegistrada: format(new Date(img.dataRegistrada!), "dd 'de' MMMM 'de' yyyy HH:mm", { locale: ptBR }),
+                }));
+                
                 totalFiles += group.files.length;
-                onImagesUploaded(newImages);
+                onImagesUploaded(uploadedImages);
 
             } catch (error: any) {
                 hasError = true;
@@ -180,7 +171,7 @@ export function ImageUploadDialog({ onImagesUploaded, children, open: controlled
             }
         }
       
-        if (totalFiles > 0) {
+        if (totalFiles > 0 && !hasError) {
             toast({
                 title: 'Upload Concluído',
                 description: `${totalFiles} imagem(ns) enviada(s) com sucesso.`,

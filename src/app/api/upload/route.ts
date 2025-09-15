@@ -19,13 +19,6 @@ export async function POST(req: NextRequest) {
     const mes = formData.get('mes') as string;
     const ano = formData.get('ano') as string;
     const dataRegistrada = formData.get('dataRegistrada') as string;
-    const baserowApiUrl = formData.get('baserowApiUrl') as string;
-    const baserowApiKey = formData.get('baserowApiKey') as string;
-    const baserowTableId = formData.get('baserowTableId') as string;
-
-    if (!baserowApiKey || !baserowTableId || !baserowApiUrl) {
-      return NextResponse.json({ message: 'Baserow API URL, Key or Table ID are missing.' }, { status: 400 });
-    }
 
     if (!files || files.length === 0) {
       return NextResponse.json({ message: 'No files to upload.' }, { status: 400 });
@@ -40,7 +33,7 @@ export async function POST(req: NextRequest) {
     
     // 1. Upload all files to Baserow storage first
     const uploadedFileMetadata = await Promise.all(
-        files.map(file => uploadFile(file, baserowApiKey, baserowApiUrl))
+        files.map(file => uploadFile(file))
     );
     
     // 2. Generate a unique ID for the new row (Baserow Primary Key)
@@ -61,7 +54,7 @@ export async function POST(req: NextRequest) {
       'ALT': files.map(file => file.name).join(', '),
     };
 
-    const newRow = await createRow(rowData, baserowTableId, baserowApiKey, baserowApiUrl);
+    const newRow = await createRow(rowData);
     
     // Baserow API returns the created row. We'll format it into our StoredImage type for the frontend.
     // Since one upload operation creates one row with possibly multiple images, we now return an array.
@@ -83,6 +76,6 @@ export async function POST(req: NextRequest) {
 
   } catch (error: any) {
     console.error('Upload failed:', error);
-    return NextResponse.json({ message: 'An error occurred during upload.', details: error.message }, { status: 500 });
+    return NextResponse.json({ message: error.message || 'An error occurred during upload.' }, { status: 500 });
   }
 }

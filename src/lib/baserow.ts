@@ -12,14 +12,26 @@ interface BaserowFileMetadata {
     uploaded_at: string;
 }
 
+const getBaserowConfig = () => {
+    const apiUrl = process.env.BASEROW_API_URL;
+    const apiKey = process.env.BASEROW_API_KEY;
+    const tableId = process.env.BASEROW_TABLE_ID;
+
+    if (!apiKey || !tableId || !apiUrl) {
+      throw new Error('Baserow environment variables (BASEROW_API_URL, BASEROW_API_KEY, BASEROW_TABLE_ID) are not configured.');
+    }
+
+    return { apiUrl, apiKey, tableId };
+}
+
+
 /**
  * Uploads a file to Baserow user files.
  */
 export async function uploadFile(
   file: File,
-  apiKey: string,
-  apiUrl: string
 ): Promise<BaserowFileMetadata> {
+  const { apiUrl, apiKey } = getBaserowConfig();
   const formData = new FormData();
   formData.append('file', file);
   
@@ -48,10 +60,8 @@ export async function uploadFile(
  */
 export async function createRow(
   rowData: Record<string, any>,
-  tableId: string,
-  apiKey: string,
-  apiUrl: string
 ): Promise<any> {
+  const { apiUrl, apiKey, tableId } = getBaserowConfig();
   // Use `user_field_names=true` to use the friendly names of the columns
   const createRowUrl = new URL(`/api/database/rows/table/${tableId}/?user_field_names=true`, apiUrl).toString();
 
@@ -76,11 +86,8 @@ export async function createRow(
 /**
  * Lists all rows from a Baserow table.
  */
-export async function listRows(
-  tableId: string,
-  apiKey: string,
-  apiUrl: string
-): Promise<any> {
+export async function listRows(): Promise<any> {
+  const { apiUrl, apiKey, tableId } = getBaserowConfig();
   const listRowsUrl = new URL(`/api/database/rows/table/${tableId}/?user_field_names=true`, apiUrl).toString();
 
   const response = await fetch(listRowsUrl, {
