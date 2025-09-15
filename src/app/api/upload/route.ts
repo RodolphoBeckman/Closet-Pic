@@ -41,9 +41,14 @@ export async function POST(req: NextRequest) {
     const uploadedFileMetadata = await Promise.all(
         files.map(file => uploadFile(file, baserowApiKey, baserowApiUrl))
     );
+    
+    // 2. Generate a unique ID for the new row (Baserow Primary Key)
+    const uniqueId = `${new Date().toISOString()}-${files[0].name}`;
 
-    // 2. Create a new row in the Baserow table with the file metadata
+
+    // 3. Create a new row in the Baserow table with the file metadata
     const rowData = {
+      id: uniqueId, // Set the primary key field
       referencia,
       marca,
       dia: Number(dia),
@@ -56,7 +61,7 @@ export async function POST(req: NextRequest) {
 
     const newRow = await createRow(rowData, baserowTableId, baserowApiKey, baserowApiUrl);
 
-    // 3. Manually add the full URLs and the original date to the response for the frontend to use
+    // 4. Manually add the full URLs and the original date to the response for the frontend to use
     const responseWithUrls = {
         ...newRow,
         dataRegistrada: dataRegistrada, // Return the original ISO string
