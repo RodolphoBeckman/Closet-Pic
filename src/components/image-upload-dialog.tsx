@@ -21,7 +21,6 @@ import { ScrollArea } from './ui/scroll-area';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
 
 type ImageUploadDialogProps = {
   onImagesUploaded: (images: StoredImage[]) => void;
@@ -170,8 +169,9 @@ export function ImageUploadDialog({ onImagesUploaded, children, open: controlled
                 const newRow = await response.json();
                 totalFiles += group.files.length;
                 
+                // This converts the response from our API into the StoredImage format for the frontend state
                 const uploadedImages: StoredImage[] = (newRow.src || []).map((img: any, index: number) => ({
-                    id: `${newRow.id}-${index}`,
+                    id: `${newRow.id}-${index}`, // This ID is for frontend key purposes
                     src: img.url,
                     category: 'default',
                     alt: img.name,

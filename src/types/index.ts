@@ -31,3 +31,16 @@ export interface GalleryGroupedImage {
     marca: string;
     items: GroupedImage[];
 }
+
+export interface BaserowRow {
+    'EU IA': string;
+    'REFERÊNCIA'?: string;
+    'MARCA'?: string;
+    'DIA'?: number;
+    'MES'?: string;
+    'ANO'?: number;
+    'DATA REGISTRADA'?: string;
+    'SRC': { url: string; name: string }[];
+    'ALT'?: string;
+    [key: string]: any; // Allow other properties
+}

@@ -44,6 +44,7 @@ export async function uploadFile(
 
 /**
  * Creates a new row in a Baserow table.
+ * The keys in rowData must be the exact names of the columns in your Baserow table.
  */
 export async function createRow(
   rowData: Record<string, any>,
@@ -51,6 +52,8 @@ export async function createRow(
   apiKey: string,
   apiUrl: string
 ): Promise<any> {
+  // Use `user_field_names=false` to use the internal field_x names, which are stable.
+  // We'll pass the exact column names as keys in the body, which Baserow supports.
   const createRowUrl = new URL(`/api/database/rows/table/${tableId}/?user_field_names=true`, apiUrl).toString();
 
   const response = await fetch(createRowUrl, {
@@ -64,7 +67,7 @@ export async function createRow(
 
   if (!response.ok) {
     const errorBody = await response.json();
-    console.error('Baserow create row error:', errorBody);
+    console.error('Baserow create row error:', errorBody.detail || errorBody);
     throw new Error(`Failed to create row in Baserow: ${response.statusText}`);
   }
 

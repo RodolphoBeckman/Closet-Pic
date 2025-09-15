@@ -43,29 +43,36 @@ export async function POST(req: NextRequest) {
     );
     
     // 2. Generate a unique ID for the new row (Baserow Primary Key)
-    const uniqueId = `${new Date().toISOString()}-${files[0].name}`;
+    const uniqueId = `${new Date().getTime()}`;
 
 
     // 3. Create a new row in the Baserow table with the file metadata
+    // IMPORTANT: The keys here must EXACTLY match the field names in your Baserow table.
     const rowData = {
-      id: uniqueId, // Set the primary key field
-      referencia,
-      marca,
-      dia: Number(dia),
-      mes,
-      ano: Number(ano),
-      dataRegistrada,
-      src: uploadedFileMetadata.map(meta => ({ name: meta.name })), // Only send name for row creation
-      alt: files.map(file => file.name).join(', '),
+      'EU IA': uniqueId, // This is the primary key field. Let's use a timestamp for uniqueness.
+      'REFERÊNCIA': referencia,
+      'MARCA': marca,
+      'DIA': Number(dia),
+      'MES': mes,
+      'ANO': Number(ano),
+      'DATA REGISTRADA': dataRegistrada,
+      'SRC': uploadedFileMetadata.map(meta => ({ name: meta.name })), // Only send name for row creation
+      'ALT': files.map(file => file.name).join(', '),
     };
 
     const newRow = await createRow(rowData, baserowTableId, baserowApiKey, baserowApiUrl);
-
-    // 4. Manually add the full URLs and the original date to the response for the frontend to use
+    
+    // Baserow API returns the created row. We'll enrich it with the full file URLs and a consistent ID.
     const responseWithUrls = {
         ...newRow,
+        id: newRow['EU IA'], // Use the primary key value as the consistent ID for the frontend
         dataRegistrada: dataRegistrada, // Return the original ISO string
         src: uploadedFileMetadata.map(meta => ({ url: meta.url, name: meta.name })),
+        referencia: newRow['REFERÊNCIA'],
+        marca: newRow['MARCA'],
+        dia: newRow['DIA'],
+        mes: newRow['MES'],
+        ano: newRow['ANO'],
     };
 
     return NextResponse.json(responseWithUrls, { status: 201 });
