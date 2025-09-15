@@ -49,13 +49,19 @@ export async function POST(req: NextRequest) {
       mes,
       ano: Number(ano),
       dataRegistrada,
-      src: uploadedFileMetadata.map(meta => ({ url: meta.url, name: meta.name })),
+      src: uploadedFileMetadata.map(meta => ({ name: meta.name })), // Only send name for row creation
       alt: files.map(file => file.name).join(', '),
     };
 
     const newRow = await createRow(rowData, baserowTableId, baserowApiKey);
 
-    return NextResponse.json(newRow, { status: 201 });
+    // 3. Manually add the full URLs to the response for the frontend to use
+    const responseWithUrls = {
+        ...newRow,
+        src: uploadedFileMetadata.map(meta => ({ url: meta.url, name: meta.name })),
+    };
+
+    return NextResponse.json(responseWithUrls, { status: 201 });
 
   } catch (error: any) {
     console.error('Upload failed:', error);

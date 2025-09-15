@@ -52,8 +52,8 @@ export function ImageUploadDialog({ onImagesUploaded, children, open: controlled
       const validationErrors: string[] = [];
 
       Array.from(selectedFiles).forEach(file => {
-        if (file.size > 4 * 1024 * 1024) { // 4MB limit
-          validationErrors.push(`${file.name} is too large (max 4MB).`);
+        if (file.size > 4.5 * 1024 * 1024) { // 4.5MB limit
+          validationErrors.push(`${file.name} is too large (max 4.5MB).`);
           return;
         }
         const reader = new FileReader();
@@ -117,7 +117,6 @@ export function ImageUploadDialog({ onImagesUploaded, children, open: controlled
       const dia = format(today, 'dd');
       const mes = format(today, 'LLLL', { locale: ptBR });
       const ano = format(today, 'yyyy');
-      const dataRegistrada = format(today, "dd 'de' MMMM 'de' yyyy HH:mm", { locale: ptBR });
       const dataRegistradaISO = today.toISOString();
 
 
@@ -147,7 +146,7 @@ export function ImageUploadDialog({ onImagesUploaded, children, open: controlled
         
         // This is a bit of a hack, we create "StoredImage" objects on the fly
         // to update the UI immediately without having to re-fetch.
-        const uploadedImages: StoredImage[] = newRow.src.map((img: any, index: number) => ({
+        const uploadedImages: StoredImage[] = (newRow.src || []).map((img: any, index: number) => ({
             id: `${newRow.id}-${index}`, // Create a unique-ish ID
             src: img.url,
             category: 'default',
@@ -255,7 +254,7 @@ export function ImageUploadDialog({ onImagesUploaded, children, open: controlled
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
                   <UploadCloud className="w-10 h-10 mb-3 text-muted-foreground" />
                   <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold text-primary">Clique para fazer upload</span> ou arraste e solte</p>
-                  <p className="text-xs text-muted-foreground">PNG, JPG, GIF até 4MB</p>
+                  <p className="text-xs text-muted-foreground">PNG, JPG, GIF até 4.5MB</p>
                 </div>
               </Label>
               <Input id="picture-upload-initial" type="file" className="hidden" accept="image/*" onChange={handleFileChange} multiple />
