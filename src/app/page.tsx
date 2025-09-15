@@ -13,7 +13,7 @@ import { CalendarIcon } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { format, parse, isValid } from 'date-fns';
 import { DateRange } from 'react-day-picker';
-import { ptBR } from 'date-ns/locale';
+import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import {
   Table,
@@ -458,3 +458,5 @@ export default function Home() {
     </Suspense>
   )
 }
+
+    

@@ -4,14 +4,18 @@ import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import type { UserSession } from '@/types';
 
-const secretKey = process.env.SESSION_SECRET;
-if (!secretKey) {
-  throw new Error('A variável de ambiente SESSION_SECRET não foi definida.');
-}
-const encodedKey = new TextEncoder().encode(secretKey);
 const cookieName = 'session';
 
+function getSecretKey() {
+  const secretKey = process.env.SESSION_SECRET;
+  if (!secretKey) {
+    throw new Error('A variável de ambiente SESSION_SECRET não foi definida.');
+  }
+  return new TextEncoder().encode(secretKey);
+}
+
 export async function encrypt(payload: UserSession) {
+  const encodedKey = getSecretKey();
   return new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
@@ -22,6 +26,7 @@ export async function encrypt(payload: UserSession) {
 export async function decrypt(session: string | undefined = '') {
   if (!session) return null;
   try {
+    const encodedKey = getSecretKey();
     const { payload } = await jwtVerify(session, encodedKey, {
       algorithms: ['HS256'],
     });

@@ -6,11 +6,16 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { useEffect, useState } from 'react';
 import type { UserSession } from '@/types';
 import Header from '@/components/header';
+import { usePathname, useRouter } from 'next/navigation';
 
 // export const metadata: Metadata = {
 //   title: 'ClosetPic',
 //   description: 'Upload, categorize, and search your images.',
 // };
+
+const protectedRoutes = ['/'];
+const publicRoutes = ['/login', '/register'];
+
 
 export default function RootLayout({
   children,
@@ -18,6 +23,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const [user, setUser] = useState<UserSession | null>(null);
+  const [loadingSession, setLoadingSession] = useState(true);
+  const pathname = usePathname();
+  const router = useRouter();
+
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -28,19 +37,42 @@ export default function RootLayout({
     window.addEventListener('mousemove', handleMouseMove);
 
     // Fetch user session data
-    // This is a simple way to get session on the client.
-    // In a more complex app, you might use a dedicated context or state management library.
     fetch('/api/auth/session').then(res => res.json()).then(data => {
-      if(data.session) {
-        setUser(data.session);
+      const sessionUser = data.session || null;
+      setUser(sessionUser);
+      setLoadingSession(false);
+
+      const isProtectedRoute = protectedRoutes.includes(pathname);
+      const isPublicRoute = publicRoutes.includes(pathname);
+
+      if (isProtectedRoute && !sessionUser) {
+        router.push('/login');
       }
+
+      if (isPublicRoute && sessionUser) {
+        router.push('/');
+      }
+
     });
 
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
     };
-  }, []);
+  }, [pathname, router]);
+
+  if (loadingSession) {
+    // Você pode renderizar um skeleton/spinner de página inteira aqui
+    return (
+       <html lang="en" suppressHydrationWarning>
+        <body>
+          <div className="flex items-center justify-center min-h-screen">
+            {/* Opcional: adicione um spinner de carregamento aqui */}
+          </div>
+        </body>
+      </html>
+    )
+  }
 
   return (
     <html lang="en" suppressHydrationWarning>
