@@ -1,4 +1,5 @@
 'use server';
+import type { BaserowUser } from '@/types';
 
 interface BaserowFileMetadata {
     url: string;
@@ -16,12 +17,18 @@ const getBaserowConfig = () => {
     const apiUrl = process.env.NEXT_PUBLIC_URL_API_BASEROW;
     const apiKey = process.env.NEXT_PUBLIC_CHAVE_API_BASEROW;
     const tableId = process.env.NEXT_PUBLIC_ID_DA_TABELA_BASEROW;
+    const usersTableId = process.env.NEXT_PUBLIC_ID_DA_TABELA_USERS_BASEROW;
 
-    if (!apiKey || !tableId || !apiUrl) {
-      throw new Error('As variáveis de ambiente do Baserow (NEXT_PUBLIC_URL_API_BASEROW, NEXT_PUBLIC_CHAVE_API_BASEROW, NEXT_PUBLIC_ID_DA_TABELA_BASEROW) não foram configuradas.');
+
+    if (!apiKey || !apiUrl) {
+      throw new Error('As variáveis de ambiente do Baserow (NEXT_PUBLIC_URL_API_BASEROW, NEXT_PUBLIC_CHAVE_API_BASEROW) não foram configuradas.');
     }
 
-    return { apiUrl, apiKey, tableId };
+    if(!tableId && !usersTableId) {
+       throw new Error('Pelo menos uma variável de ID de tabela do Baserow (NEXT_PUBLIC_ID_DA_TABELA_BASEROW ou NEXT_PUBLIC_ID_DA_TABELA_USERS_BASEROW) deve ser configurada.');
+    }
+
+    return { apiUrl, apiKey, tableId, usersTableId };
 }
 
 
@@ -54,40 +61,47 @@ export async function uploadFile(
   return response.json();
 }
 
+// Generic function to create a row in any table
+async function createRowInTable(tableId: string, rowData: Record<string, any>): Promise<any> {
+    const { apiUrl, apiKey } = getBaserowConfig();
+    const createRowUrl = new URL(`/api/database/rows/table/${tableId}/?user_field_names=true`, apiUrl).toString();
+
+    const response = await fetch(createRowUrl, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Token ${apiKey}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(rowData),
+    });
+
+    if (!response.ok) {
+        const errorBody = await response.json();
+        console.error(`Baserow create row error in table ${tableId}:`, errorBody.detail || errorBody);
+        throw new Error(`Failed to create row in Baserow table ${tableId}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+
 /**
- * Creates a new row in a Baserow table.
- * The keys in rowData must be the exact names of the columns in your Baserow table.
+ * Creates a new row in the main images table.
  */
 export async function createRow(
   rowData: Record<string, any>,
 ): Promise<any> {
-  const { apiUrl, apiKey, tableId } = getBaserowConfig();
-  // Use `user_field_names=true` to use the friendly names of the columns
-  const createRowUrl = new URL(`/api/database/rows/table/${tableId}/?user_field_names=true`, apiUrl).toString();
-
-  const response = await fetch(createRowUrl, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Token ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(rowData),
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.json();
-    console.error('Baserow create row error:', errorBody.detail || errorBody);
-    throw new Error(`Failed to create row in Baserow: ${response.statusText}`);
-  }
-
-  return response.json();
+  const { tableId } = getBaserowConfig();
+  if(!tableId) throw new Error("ID da tabela de imagens não configurado.");
+  return createRowInTable(tableId, rowData);
 }
 
 /**
- * Lists all rows from a Baserow table.
+ * Lists all rows from the main images table.
  */
 export async function listRows(): Promise<any> {
   const { apiUrl, apiKey, tableId } = getBaserowConfig();
+  if(!tableId) throw new Error("ID da tabela de imagens não configurado.");
   const listRowsUrl = new URL(`/api/database/rows/table/${tableId}/?user_field_names=true`, apiUrl).toString();
 
   const response = await fetch(listRowsUrl, {
@@ -112,4 +126,52 @@ export async function listRows(): Promise<any> {
   }
   const data = await response.json();
   return data.results; // The rows are in the 'results' property
+}
+
+
+// --- User Authentication Functions ---
+
+/**
+ * Creates a new user in the Users table.
+ */
+export async function createUser(userData: Omit<BaserowUser, 'id' | 'created_at'>): Promise<BaserowUser> {
+    const { usersTableId } = getBaserowConfig();
+    if (!usersTableId) throw new Error("ID da tabela de usuários não configurado.");
+    
+    return createRowInTable(usersTableId, userData);
+}
+
+/**
+ * Finds a user by their email address.
+ */
+export async function findUserByEmail(email: string): Promise<BaserowUser | null> {
+    const { apiUrl, apiKey, usersTableId } = getBaserowConfig();
+    if (!usersTableId) throw new Error("ID da tabela de usuários não configurado.");
+    
+    const url = new URL(`/api/database/rows/table/${usersTableId}/`, apiUrl);
+    url.searchParams.append('user_field_names', 'true');
+    // Add a filter to find the user by email
+    url.searchParams.append('filter__field_email__equal', email);
+    url.searchParams.append('size', '1'); // We only expect one user
+
+    const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: {
+            'Authorization': `Token ${apiKey}`,
+        },
+        cache: 'no-store',
+    });
+
+    if (!response.ok) {
+        const errorBody = await response.json();
+        console.error('Baserow find user error:', errorBody);
+        throw new Error(`Failed to find user by email: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    if (data.results && data.results.length > 0) {
+        return data.results[0];
+    }
+    
+    return null;
 }

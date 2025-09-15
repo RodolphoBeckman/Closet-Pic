@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { FileImage, Upload, LayoutGrid, List, Loader2, BarChart } from 'lucide-react';
-import Header from '@/components/header';
 import { ImageUploadDialog } from '@/components/image-upload-dialog';
 import type { StoredImage, GroupedImage, GalleryGroupedImage, ChartData } from '@/types';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,7 @@ import { CalendarIcon } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { format, parse, isValid } from 'date-fns';
 import { DateRange } from 'react-day-picker';
-import { ptBR } from 'date-fns/locale';
+import { ptBR } from 'date-ns/locale';
 import { cn } from '@/lib/utils';
 import {
   Table,
@@ -35,7 +35,7 @@ import { BrandDetailsDialog } from '@/components/brand-details-dialog';
 
 type ViewMode = 'table' | 'gallery' | 'chart';
 
-export default function Home() {
+function HomePageContent() {
   const [images, setImages] = useState<StoredImage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -46,6 +46,19 @@ export default function Home() {
   const { toast } = useToast();
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
+  
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const error = searchParams.get('error');
+    if(error){
+      toast({
+        title: 'Erro de Login',
+        description: error,
+        variant: 'destructive'
+      });
+    }
+  }, [searchParams, toast]);
 
   useEffect(() => {
     const fetchImages = async () => {
@@ -307,7 +320,6 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
-      <Header />
       <main className="flex-1">
         <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8 max-w-7xl">
           <div className="mb-8 flex flex-col sm:flex-row gap-4 items-center">
@@ -435,4 +447,14 @@ export default function Home() {
       )}
     </div>
   );
+}
+
+
+export default function Home() {
+  return (
+    // You could have a loading skeleton here while waiting for the suspense
+    <Suspense fallback={<div>Loading...</div>}>
+      <HomePageContent />
+    </Suspense>
+  )
 }

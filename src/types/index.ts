@@ -59,3 +59,16 @@ export interface BrandDetailItem {
         alt: string;
     }[];
 }
+
+export interface BaserowUser {
+  "EU IA": string;
+  email: string;
+  password?: string; // Should not be sent to client
+  name: string;
+  created_at: string;
+}
+
+export interface UserSession {
+  name: string;
+  email: string;
+}

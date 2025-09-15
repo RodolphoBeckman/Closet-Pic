@@ -3,7 +3,9 @@ import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from '@/components/theme-provider';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import type { UserSession } from '@/types';
+import Header from '@/components/header';
 
 // export const metadata: Metadata = {
 //   title: 'ClosetPic',
@@ -15,6 +17,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const [user, setUser] = useState<UserSession | null>(null);
+
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       document.body.style.setProperty('--mouse-x', `${e.clientX}px`);
@@ -22,6 +26,16 @@ export default function RootLayout({
     };
 
     window.addEventListener('mousemove', handleMouseMove);
+
+    // Fetch user session data
+    // This is a simple way to get session on the client.
+    // In a more complex app, you might use a dedicated context or state management library.
+    fetch('/api/auth/session').then(res => res.json()).then(data => {
+      if(data.session) {
+        setUser(data.session);
+      }
+    });
+
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
@@ -57,6 +71,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <Header user={user} />
           {children}
           <Toaster />
         </ThemeProvider>
