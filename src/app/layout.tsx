@@ -46,6 +46,9 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet" />
+
+        <link rel="icon" href="/LOGO.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/LOGO.png" />
       </head>
       <body className="font-body antialiased">
         <ThemeProvider
