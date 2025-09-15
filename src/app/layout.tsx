@@ -7,7 +7,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { useEffect, useState } from 'react';
 import type { UserSession } from '@/types';
 import Header from '@/components/header';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 
 // export const metadata: Metadata = {
 //   title: 'ClosetPic',
@@ -20,9 +20,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const [user, setUser] = useState<UserSession | null>(null);
-  const [loading, setLoading] = useState(true);
   const pathname = usePathname();
-  const router = useRouter();
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -36,58 +34,29 @@ export default function RootLayout({
   }, []);
 
   useEffect(() => {
-    const publicRoutes = ['/login', '/register'];
-    const isPublicRoute = publicRoutes.includes(pathname);
-
-    let sessionUser: UserSession | null = null;
-    
     const checkSession = async () => {
       try {
         const response = await fetch('/api/auth/session');
         if (response.ok) {
           const data = await response.json();
-          sessionUser = data.session || null;
-          setUser(sessionUser);
+          setUser(data.session || null);
         } else {
           setUser(null);
         }
       } catch (error) {
         console.error("Failed to fetch session:", error);
         setUser(null);
-      } finally {
-        setLoading(false);
-        // --- Redirection logic is now here, AFTER session check is complete ---
-        if (isPublicRoute && sessionUser?.email) {
-          router.push('/');
-        } else if (!isPublicRoute && !sessionUser?.email) {
-          router.push('/login');
-        }
       }
     };
     
+    // We only need to check the session, the middleware handles redirection.
     checkSession();
-  }, [pathname, router]);
+  }, [pathname]);
 
   const isPublicPage = ['/login', '/register'].includes(pathname);
 
-  // While loading the session, show a full-screen loader to prevent flashing content
-  // or premature redirection.
-  if (loading) {
-     return (
-       <html lang="en" suppressHydrationWarning>
-        <body className="font-body antialiased">
-          <div className="flex items-center justify-center min-h-screen bg-background">
-            {/* You can replace this with a more sophisticated spinner/loader component */}
-            <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary"></div>
-          </div>
-        </body>
-      </html>
-    )
-  }
-
-  // If we are on a public page and not logged in, just render the children
-  // without the main header.
-  if (isPublicPage && !user) {
+  // If it's a public page, we can render a simpler layout without the header.
+  if (isPublicPage) {
     return (
        <html lang="en" suppressHydrationWarning>
          <body className="font-body antialiased">
@@ -105,7 +74,7 @@ export default function RootLayout({
     )
   }
 
-
+  // Render the full layout for authenticated pages
   return (
     <html lang="en" suppressHydrationWarning>
       <head>

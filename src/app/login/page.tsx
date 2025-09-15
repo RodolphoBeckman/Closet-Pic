@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -39,6 +40,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export default function LoginPage() {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -67,9 +69,8 @@ export default function LoginPage() {
           description: 'Redirecionando...',
         });
 
-        // Força um recarregamento completo para a rota principal.
-        // Isso garante que o RootLayout seja renderizado do zero com o novo cookie.
-        window.location.assign('/');
+        // Use router.push - the middleware will handle the auth state.
+        router.push('/');
 
       } catch (error: any) {
         toast({
