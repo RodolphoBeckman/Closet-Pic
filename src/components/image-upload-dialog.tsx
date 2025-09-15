@@ -156,7 +156,7 @@ export function ImageUploadDialog({ onImagesUploaded, children, open: controlled
             dia: String(newRow.dia),
             mes: newRow.mes,
             ano: String(newRow.ano),
-            dataRegistrada: format(new Date(newRow.dataRegistrada), "dd 'de' MMMM 'de' yyyy HH:mm", { locale: ptBR }),
+            dataRegistrada: newRow.dataRegistrada ? format(new Date(newRow.dataRegistrada), "dd 'de' MMMM 'de' yyyy HH:mm", { locale: ptBR }) : 'N/A',
         }));
         
         onImagesUploaded(uploadedImages);
@@ -253,7 +253,7 @@ export function ImageUploadDialog({ onImagesUploaded, children, open: controlled
               <Label htmlFor="picture-upload-initial" className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
                   <UploadCloud className="w-10 h-10 mb-3 text-muted-foreground" />
-                  <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold text-primary">Clique para fazer upload</span> ou arraste e solte</p>
+                  <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold text-primary">Clique para fazer o upload</span> ou arraste e solte</p>
                   <p className="text-xs text-muted-foreground">PNG, JPG, GIF até 4.5MB</p>
                 </div>
               </Label>

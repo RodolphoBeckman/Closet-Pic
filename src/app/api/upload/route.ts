@@ -55,9 +55,10 @@ export async function POST(req: NextRequest) {
 
     const newRow = await createRow(rowData, baserowTableId, baserowApiKey);
 
-    // 3. Manually add the full URLs to the response for the frontend to use
+    // 3. Manually add the full URLs and the original date to the response for the frontend to use
     const responseWithUrls = {
         ...newRow,
+        dataRegistrada: dataRegistrada, // Return the original ISO string
         src: uploadedFileMetadata.map(meta => ({ url: meta.url, name: meta.name })),
     };
 
