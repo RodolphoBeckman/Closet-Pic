@@ -69,9 +69,8 @@ export default function LoginPage() {
           description: 'Redirecionando...',
         });
 
-        // A navegação simples é suficiente, o middleware cuidará do resto.
-        router.push('/');
-        // Adicionar um refresh para garantir que o estado do servidor seja atualizado no cliente
+        // Força uma atualização do estado do servidor. O middleware irá
+        // então redirecionar para a página principal porque a sessão agora existe.
         router.refresh();
 
       } catch (error: any) {
