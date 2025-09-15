@@ -23,7 +23,7 @@ import { ptBR } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 
 type ImageUploadDialogProps = {
-  onImagesUploaded: (images: StoredImage[]) => void;
+  onImageUploaded: (image: StoredImage) => void;
   children: React.ReactNode;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -41,7 +41,7 @@ interface UploadGroup {
     files: UploadFile[];
 }
 
-export function ImageUploadDialog({ onImagesUploaded, children, open: controlledOpen, onOpenChange: setControlledOpen }: ImageUploadDialogProps) {
+export function ImageUploadDialog({ onImageUploaded, children, open: controlledOpen, onOpenChange: setControlledOpen }: ImageUploadDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [uploadGroups, setUploadGroups] = useState<UploadGroup[]>([]);
   const [isPending, startTransition] = useTransition();
@@ -131,7 +131,6 @@ export function ImageUploadDialog({ onImagesUploaded, children, open: controlled
     }
 
     startTransition(async () => {
-        let allUploadedImages: StoredImage[] = [];
         let totalFiles = 0;
         let hasError = false;
 
@@ -166,22 +165,10 @@ export function ImageUploadDialog({ onImagesUploaded, children, open: controlled
                     throw new Error(`Falha no upload para ref ${group.referencia}: ${errorData.message}`);
                 }
 
-                const newRow = await response.json();
+                const newRowAsStoredImage = await response.json();
                 totalFiles += group.files.length;
-                
-                const uploadedImages: StoredImage[] = (newRow.src || []).map((img: any, index: number) => ({
-                    id: `${newRow.id}-${index}`, // This ID is for frontend key purposes
-                    src: img.url,
-                    category: 'default',
-                    alt: img.name,
-                    referencia: newRow.referencia, // This was the missing piece
-                    marca: newRow.marca,
-                    dia: String(newRow.dia),
-                    mes: newRow.mes,
-                    ano: String(newRow.ano),
-                    dataRegistrada: newRow.dataRegistrada
-                }));
-                allUploadedImages = [...allUploadedImages, ...uploadedImages];
+                onImageUploaded(newRowAsStoredImage);
+
             } catch (error: any) {
                 hasError = true;
                 console.error('Upload error for group:', group.referencia, error);
@@ -194,7 +181,6 @@ export function ImageUploadDialog({ onImagesUploaded, children, open: controlled
         }
       
         if (totalFiles > 0) {
-            onImagesUploaded(allUploadedImages);
             toast({
                 title: 'Upload Concluído',
                 description: `${totalFiles} imagem(ns) enviada(s) com sucesso.`,

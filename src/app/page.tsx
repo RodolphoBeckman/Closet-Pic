@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { FileImage, Upload, LayoutGrid, List } from 'lucide-react';
+import { FileImage, Upload, LayoutGrid, List, Loader2 } from 'lucide-react';
 import Header from '@/components/header';
 import { ImageUploadDialog } from '@/components/image-upload-dialog';
 import type { StoredImage, GroupedImage, GalleryGroupedImage } from '@/types';
@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
-import { format, parse } from 'date-fns';
+import { format, parse, isValid } from 'date-fns';
 import { DateRange } from 'react-day-picker';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -26,19 +26,59 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { ImageViewer } from '@/components/image-viewer';
 import { GalleryView } from '@/components/gallery-view';
+import { useToast } from '@/hooks/use-toast';
 
 type ViewMode = 'table' | 'gallery';
 
 export default function Home() {
   const [images, setImages] = useState<StoredImage[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('table');
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchImages = async () => {
+      const baserowApiUrl = localStorage.getItem('baserowApiUrl');
+      const baserowApiKey = localStorage.getItem('baserowApiKey');
+      const baserowTableId = localStorage.getItem('baserowTableId');
+
+      if (!baserowApiKey || !baserowTableId || !baserowApiUrl) {
+          setIsLoading(false);
+          // Don't toast here, it can be annoying on first load
+          return;
+      }
+      
+      try {
+        const response = await fetch(`/api/images?apiUrl=${encodeURIComponent(baserowApiUrl)}&apiKey=${encodeURIComponent(baserowApiKey)}&tableId=${encodeURIComponent(baserowTableId)}`);
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to fetch images.');
+        }
+
+        const data: StoredImage[] = await response.json();
+        setImages(data);
+      } catch (error: any) {
+        console.error("Failed to fetch images:", error);
+        toast({
+            title: 'Erro ao Carregar Imagens',
+            description: error.message || 'Não foi possível buscar as imagens do banco de dados.',
+            variant: 'destructive'
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchImages();
+  }, [toast]);
 
 
-  const handleImagesUploaded = (uploadedImages: StoredImage[]) => {
-    setImages(prev => [...uploadedImages, ...prev]);
+  const handleImagesUploaded = (uploadedImage: StoredImage) => {
+    // We receive one group at a time now.
+    setImages(prev => [uploadedImage, ...prev]);
   };
 
   const filteredImages = useMemo(() => {
@@ -55,11 +95,19 @@ export default function Home() {
         if (!image.dataRegistrada) return false;
         try {
           const imageDate = parse(image.dataRegistrada, "dd 'de' MMMM 'de' yyyy HH:mm", new Date(), { locale: ptBR });
+          if (!isValid(imageDate)) return false;
+          
           if (dateRange.to) {
-            return imageDate >= dateRange.from && imageDate <= dateRange.to;
+            // Adjust 'to' date to be end of the day
+            const toDate = new Date(dateRange.to);
+            toDate.setHours(23, 59, 59, 999);
+            return imageDate >= dateRange.from && imageDate <= toDate;
           }
-          // If only from is selected, check if it's on the same day
-          return imageDate.toDateString() === dateRange.from?.toDateString();
+          // If only 'from' is selected, check if it's on the same day
+          const fromDate = new Date(dateRange.from);
+          return imageDate.getDate() === fromDate.getDate() &&
+                 imageDate.getMonth() === fromDate.getMonth() &&
+                 imageDate.getFullYear() === fromDate.getFullYear();
         } catch (error) {
           console.error("Error parsing date:", image.dataRegistrada, error);
           return false;
@@ -144,7 +192,7 @@ export default function Home() {
     return allImages.find(img => img.id === selectedImage) || null;
   }, [selectedImage, images]);
 
-  const noImages = images.length === 0;
+  const noImages = !isLoading && images.length === 0;
   const noFilteredResults = !noImages && filteredImages.length === 0;
 
   return (
@@ -153,7 +201,7 @@ export default function Home() {
       <main className="flex-1">
         <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8 max-w-7xl">
           <div className="mb-8 flex flex-col sm:flex-row gap-4 items-center">
-            <ImageUploadDialog onImagesUploaded={handleImagesUploaded}>
+            <ImageUploadDialog onImageUploaded={handleImagesUploaded}>
                 <Button>
                     <Upload className="mr-2 h-4 w-4" />
                     Upload Images
@@ -213,7 +261,11 @@ export default function Home() {
             </Button>
             </div>
           </div>
-          {noImages ? (
+          {isLoading ? (
+            <div className="flex justify-center items-center py-24">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            </div>
+          ) : noImages ? (
              <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 py-24 text-center mt-8">
                 <div className="flex justify-center items-center">
                   <div className="p-4 rounded-full bg-primary/10 mb-4 inline-block">

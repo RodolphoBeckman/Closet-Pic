@@ -17,7 +17,7 @@ export interface GroupedImage {
   referencia: string;
   marca?: string;
   dia?: string;
-es?: string;
+  mes?: string;
   ano?: string;
   dataRegistrada?: string;
   images: {

@@ -52,8 +52,7 @@ export async function createRow(
   apiKey: string,
   apiUrl: string
 ): Promise<any> {
-  // Use `user_field_names=false` to use the internal field_x names, which are stable.
-  // We'll pass the exact column names as keys in the body, which Baserow supports.
+  // Use `user_field_names=true` to use the friendly names of the columns
   const createRowUrl = new URL(`/api/database/rows/table/${tableId}/?user_field_names=true`, apiUrl).toString();
 
   const response = await fetch(createRowUrl, {
@@ -72,4 +71,30 @@ export async function createRow(
   }
 
   return response.json();
+}
+
+/**
+ * Lists all rows from a Baserow table.
+ */
+export async function listRows(
+  tableId: string,
+  apiKey: string,
+  apiUrl: string
+): Promise<any> {
+  const listRowsUrl = new URL(`/api/database/rows/table/${tableId}/?user_field_names=true`, apiUrl).toString();
+
+  const response = await fetch(listRowsUrl, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Token ${apiKey}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json();
+    console.error('Baserow list rows error:', errorBody);
+    throw new Error(`Failed to list rows from Baserow: ${response.statusText}`);
+  }
+  const data = await response.json();
+  return data.results; // The rows are in the 'results' property
 }
