@@ -34,6 +34,8 @@ export default function RootLayout({
   }, []);
 
   useEffect(() => {
+    // Este useEffect agora só busca a sessão para exibir no cabeçalho.
+    // A proteção de rotas é feita inteiramente pelo middleware.
     const checkSession = async () => {
       try {
         const response = await fetch('/api/auth/session');
@@ -49,32 +51,13 @@ export default function RootLayout({
       }
     };
     
-    // We only need to check the session, the middleware handles redirection.
     checkSession();
   }, [pathname]);
 
   const isPublicPage = ['/login', '/register'].includes(pathname);
 
-  // If it's a public page, we can render a simpler layout without the header.
-  if (isPublicPage) {
-    return (
-       <html lang="en" suppressHydrationWarning>
-         <body className="font-body antialiased">
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="system"
-              enableSystem
-              disableTransitionOnChange
-            >
-              {children}
-              <Toaster />
-            </ThemeProvider>
-         </body>
-       </html>
-    )
-  }
-
-  // Render the full layout for authenticated pages
+  // Renderiza o layout completo. O middleware já garantiu que o usuário
+  // tem permissão para estar nesta página.
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -104,7 +87,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <Header user={user} />
+          {!isPublicPage && <Header user={user} />}
           {children}
           <Toaster />
         </ThemeProvider>
