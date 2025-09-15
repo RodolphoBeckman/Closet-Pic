@@ -31,9 +31,8 @@ export default function Header({ user }: { user: UserSession | null }) {
 
   const handleLogout = async () => {
     await deleteSession();
-    // Redireciona para a página de login após o logout
+    // Redireciona para a página de login após o logout. O middleware garantirá que o usuário permaneça lá.
     router.push('/login');
-    router.refresh(); // Garante que o estado seja limpo
   };
 
   return (
