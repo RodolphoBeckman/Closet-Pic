@@ -62,7 +62,7 @@ export async function uploadFile(
 }
 
 // Generic function to create a row in any table
-async function createRowInTable(tableId: string, rowData: Record<string, any>): Promise<any> {
+export async function createRowInTable(tableId: string, rowData: Record<string, any>): Promise<any> {
     const { apiUrl, apiKey } = getBaserowConfig();
     const createRowUrl = new URL(`/api/database/rows/table/${tableId}/?user_field_names=true`, apiUrl).toString();
 

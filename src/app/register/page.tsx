@@ -4,8 +4,10 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { useTransition } from 'react';
+import Image from 'next/image';
+import { Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -26,34 +28,33 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
-import Image from 'next/image';
 
-const loginSchema = z.object({
+const registerSchema = z.object({
+  name: z.string().min(3, { message: 'O nome deve ter pelo menos 3 caracteres.' }),
   email: z.string().email({ message: 'Por favor, insira um email válido.' }),
-  password: z.string().min(1, { message: 'A senha é obrigatória.' }),
+  password: z.string().min(6, { message: 'A senha deve ter pelo menos 6 caracteres.' }),
 });
 
-type LoginFormValues = z.infer<typeof loginSchema>;
+type RegisterFormValues = z.infer<typeof registerSchema>;
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
 
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+  const form = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
     defaultValues: {
+      name: '',
       email: '',
       password: '',
     },
   });
 
-  const onSubmit = (data: LoginFormValues) => {
+  const onSubmit = (data: RegisterFormValues) => {
     startTransition(async () => {
       try {
-        const response = await fetch('/api/auth/login', {
+        const response = await fetch('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
@@ -61,22 +62,18 @@ export default function LoginPage() {
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.message || 'Falha no login');
+          throw new Error(errorData.message || 'Falha ao registrar');
         }
 
         toast({
-          title: 'Login bem-sucedido!',
-          description: 'Redirecionando...',
+          title: 'Registro bem-sucedido!',
+          description: 'Você já pode fazer login.',
         });
 
-        // Redirect to the originally intended page, or home
-        const redirectTo = searchParams.get('from') || '/';
-        router.push(redirectTo);
-        router.refresh(); // Refresh to update session state in layout
-
+        router.push('/login');
       } catch (error: any) {
         toast({
-          title: 'Erro de Login',
+          title: 'Erro de Registro',
           description: error.message,
           variant: 'destructive',
         });
@@ -89,14 +86,31 @@ export default function LoginPage() {
       <Card className="mx-auto w-full max-w-sm">
         <CardHeader className="text-center">
             <Image src="/LOGO.png" alt="ClosetPic Logo" width={48} height={48} className="mx-auto mb-2" />
-            <CardTitle className="text-2xl">Bem-vindo de volta!</CardTitle>
+            <CardTitle className="text-2xl">Crie sua Conta</CardTitle>
             <CardDescription>
-                Faça login para acessar seu closet.
+                Insira seus dados para começar.
             </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Seu Nome Completo"
+                        {...field}
+                        disabled={isPending}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="email"
@@ -135,19 +149,19 @@ export default function LoginPage() {
               />
               <Button type="submit" className="w-full" disabled={isPending}>
                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Entrar
+                Criar conta
               </Button>
             </form>
           </Form>
         </CardContent>
         <CardFooter className="flex justify-center text-sm">
            <p className="text-muted-foreground">
-             Não tem uma conta?{' '}
+            Já tem uma conta?{' '}
             <Link
-              href="/register"
+              href="/login"
               className="font-semibold text-primary hover:underline"
             >
-              Registre-se
+              Faça login
             </Link>
           </p>
         </CardFooter>

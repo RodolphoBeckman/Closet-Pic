@@ -14,7 +14,7 @@ import { usePathname, useRouter } from 'next/navigation';
 // };
 
 const protectedRoutes = ['/'];
-const publicRoutes = ['/login'];
+const publicRoutes = ['/login', '/register'];
 
 
 export default function RootLayout({
