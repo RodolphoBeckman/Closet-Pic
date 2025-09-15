@@ -36,63 +36,74 @@ export default function RootLayout({
   }, []);
 
   useEffect(() => {
+    // Only run this check if we're not on a public route.
+    // Public routes don't need a session check initially.
     const publicRoutes = ['/login', '/register'];
     const isPublicRoute = publicRoutes.includes(pathname);
-    
-    async function checkSession() {
-        try {
-          const response = await fetch('/api/auth/session');
-          if (response.ok) {
-            const data = await response.json();
-            const sessionUser = data.session || null;
-            setUser(sessionUser);
 
-            // Se o usuário está em uma rota pública mas tem uma sessão, redirecione para a home.
-            if (isPublicRoute && sessionUser?.email) {
-              router.push('/');
-              return; // Para a execução para evitar que o setLoading(false) seja chamado prematuramente.
-            }
-            // Se o usuário está em uma rota protegida e não tem sessão, redirecione para o login.
-            if (!isPublicRoute && !sessionUser?.email) {
-              router.push('/login');
-              return;
-            }
-            
-          } else {
-             setUser(null);
-             if (!isPublicRoute) {
-                router.push('/login');
-                return;
-             }
-          }
-        } catch (error) {
-          console.error("Failed to fetch session:", error);
+    let sessionUser: UserSession | null = null;
+    
+    const checkSession = async () => {
+      try {
+        const response = await fetch('/api/auth/session');
+        if (response.ok) {
+          const data = await response.json();
+          sessionUser = data.session || null;
+          setUser(sessionUser);
+        } else {
           setUser(null);
-          if(!isPublicRoute) {
-            router.push('/login');
-            return;
-          }
-        } finally {
-            // Apenas para de carregar quando todas as verificações e redirecionamentos potenciais terminarem.
-            setLoading(false);
         }
-    }
+      } catch (error) {
+        console.error("Failed to fetch session:", error);
+        setUser(null);
+      } finally {
+        setLoading(false);
+        // --- Redirection logic is now here, AFTER session check is complete ---
+        if (isPublicRoute && sessionUser?.email) {
+          router.push('/');
+        } else if (!isPublicRoute && !sessionUser?.email) {
+          router.push('/login');
+        }
+      }
+    };
     
     checkSession();
   }, [pathname, router]);
 
   const isPublicPage = ['/login', '/register'].includes(pathname);
 
-  // Renderiza um loader de tela cheia enquanto a sessão está sendo verificada.
+  // While loading the session, show a full-screen loader to prevent flashing content
+  // or premature redirection.
   if (loading) {
      return (
        <html lang="en" suppressHydrationWarning>
         <body className="font-body antialiased">
           <div className="flex items-center justify-center min-h-screen bg-background">
-            {/* Você pode colocar um loader/spinner mais sofisticado aqui */}
+            {/* You can replace this with a more sophisticated spinner/loader component */}
+            <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary"></div>
           </div>
         </body>
       </html>
+    )
+  }
+
+  // If we are on a public page and not logged in, just render the children
+  // without the main header.
+  if (isPublicPage && !user) {
+    return (
+       <html lang="en" suppressHydrationWarning>
+         <body className="font-body antialiased">
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              {children}
+              <Toaster />
+            </ThemeProvider>
+         </body>
+       </html>
     )
   }
 
@@ -126,7 +137,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {!isPublicPage && <Header user={user} />}
+          <Header user={user} />
           {children}
           <Toaster />
         </ThemeProvider>
