@@ -60,12 +60,3 @@ export interface BrandDetailItem {
         alt: string;
     }[];
 }
-
-
-// --- AUTH TYPES ---
-
-export interface User {
-    id: string;
-    name: string;
-    email: string;
-}
