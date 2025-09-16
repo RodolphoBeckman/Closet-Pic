@@ -63,7 +63,7 @@ export default function LoginPage() {
 
         toast({
           title: 'Login bem-sucedido!',
-          description: 'Redirecionando...',
+          description: 'Redirecionando para a página principal...',
         });
         
         // Força um recarregamento completo da página para a home.
