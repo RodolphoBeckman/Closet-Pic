@@ -59,12 +59,3 @@ export interface BrandDetailItem {
         alt: string;
     }[];
 }
-
-export interface BaserowUser {
-  "EU IA": string;
-  EMAIL: string;
-  PASSWORD?: string; // Should not be sent to client, but is present in Baserow response
-  NAME: string;
-  CREATED_AT: string;
-  [key: string]: any; // Allow other properties
-}

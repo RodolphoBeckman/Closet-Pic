@@ -1,5 +1,4 @@
 'use server';
-import type { BaserowUser } from '@/types';
 require('dotenv').config();
 
 
@@ -19,13 +18,12 @@ export async function getBaserowConfig() {
     const apiUrl = process.env.URL_API_BASEROW;
     const apiKey = process.env.CHAVE_API_BASEROW;
     const tableId = process.env.ID_DA_TABELA_BASEROW;
-    const usersTableId = process.env.ID_DA_TABELA_USERS_BASEROW;
 
     if (!apiUrl || !apiKey || !tableId) {
       throw new Error('Uma ou mais variáveis de ambiente do Baserow não foram configuradas. Verifique URL_API_BASEROW, CHAVE_API_BASEROW e ID_DA_TABELA_BASEROW.');
     }
 
-    return { apiUrl, apiKey, tableId, usersTableId };
+    return { apiUrl, apiKey, tableId };
 }
 
 
@@ -121,56 +119,4 @@ export async function listRows(): Promise<any> {
   }
   const data = await response.json();
   return data.results; // The rows are in the 'results' property
-}
-
-
-// --- User Authentication Functions ---
-
-/**
- * Finds a user by their email address.
- */
-export async function findUserByEmail(email: string): Promise<BaserowUser | null> {
-    const { apiUrl, apiKey, usersTableId } = await getBaserowConfig();
-    
-    if (!usersTableId) {
-        console.warn("ID_DA_TABELA_USERS_BASEROW not set, skipping findUserByEmail.");
-        return null;
-    }
-
-    const url = new URL(`/api/database/rows/table/${usersTableId}/`, apiUrl);
-    url.searchParams.append('user_field_names', 'true');
-    // Use `contains` for case-insensitive search
-    url.searchParams.append(`filter__field_EMAIL__contains`, email);
-    url.searchParams.append('size', '1');
-
-    try {
-        const response = await fetch(url.toString(), {
-            method: 'GET',
-            headers: {
-                'Authorization': `Token ${apiKey}`,
-            },
-            cache: 'no-store',
-        });
-
-        if (!response.ok) {
-            const errorBody = await response.text();
-            console.error(`Baserow API error when finding user by email (${email}): ${response.status} ${response.statusText}`, errorBody);
-            // Don't throw, just return null as the user was not found.
-            return null;
-        }
-
-        const data = await response.json();
-        
-        if (data.results && data.results.length > 0) {
-            // The `contains` filter can return partial matches, so we need to find the exact match case-insensitively.
-            const foundUser = data.results.find((user: BaserowUser) => user.EMAIL.toLowerCase() === email.toLowerCase());
-            return foundUser || null;
-        }
-
-        return null;
-
-    } catch (error) {
-        console.error('Network or other error in findUserByEmail:', error);
-        return null;
-    }
 }
