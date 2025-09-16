@@ -1,3 +1,4 @@
+
 export interface StoredImage {
   id: string;
   src: string;
@@ -58,4 +59,13 @@ export interface BrandDetailItem {
         src: string;
         alt: string;
     }[];
+}
+
+
+// --- AUTH TYPES ---
+
+export interface User {
+    id: string;
+    name: string;
+    email: string;
 }

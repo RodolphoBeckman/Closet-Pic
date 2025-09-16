@@ -1,20 +1,50 @@
+
 'use client';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from '@/components/theme-provider';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Header from '@/components/header';
-
-// export const metadata: Metadata = {
-//   title: 'ClosetPic',
-//   description: 'Upload, categorize, and search your images.',
-// };
+import type { User } from '@/types';
+import { Loader2 } from 'lucide-react';
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isPublicRoute, setIsPublicRoute] = useState(false);
+
+  useEffect(() => {
+    // Determine if the current path is a public route on the client side.
+    const path = window.location.pathname;
+    const publicRoutes = ['/login', '/register'];
+    setIsPublicRoute(publicRoutes.includes(path));
+
+    const fetchSession = async () => {
+      // Only fetch session if it's not a public route
+      if (!publicRoutes.includes(path)) {
+        try {
+          const response = await fetch('/api/auth/session');
+          if (response.ok) {
+            const data = await response.json();
+            if (data.isAuthenticated) {
+              setUser(data.user);
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch session:", error);
+        }
+      }
+      setIsLoading(false);
+    };
+
+    fetchSession();
+  }, []);
+
+
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       document.body.style.setProperty('--mouse-x', `${e.clientX}px`);
@@ -25,6 +55,29 @@ export default function RootLayout({
       window.removeEventListener('mousemove', handleMouseMove);
     };
   }, []);
+
+  const renderContent = () => {
+    if (isLoading && !isPublicRoute) {
+        return (
+            <div className="flex h-screen w-full items-center justify-center">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            </div>
+        );
+    }
+
+    if (isPublicRoute) {
+        // For public routes like /login, just render the children without the header
+        return children;
+    }
+    
+    // For protected routes, render with the header
+    return (
+        <>
+            <Header user={user} />
+            {children}
+        </>
+    );
+  }
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -55,8 +108,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <Header />
-          {children}
+          {renderContent()}
           <Toaster />
         </ThemeProvider>
       </body>
