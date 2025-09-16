@@ -12,12 +12,12 @@ export async function middleware(req: NextRequest) {
   // Obtém a sessão diretamente do cookie.
   const session = await getSession();
 
-  // REGRA 1: Redirecionar para a página principal se o utilizador estiver logado e tentar aceder a uma rota pública.
+  // REGRA 1: Se o utilizador está logado e tenta aceder a uma rota pública, redireciona para a home.
   if (isPublicRoute && session?.email) {
     return NextResponse.redirect(new URL('/', req.nextUrl));
   }
 
-  // REGRA 2: Redirecionar para o login se o utilizador não estiver logado e tentar aceder a uma rota protegida.
+  // REGRA 2: Se o utilizador não está logado e tenta aceder a uma rota protegida, redireciona para o login.
   if (!isPublicRoute && !session?.email) {
     return NextResponse.redirect(new URL('/login', req.nextUrl));
   }
@@ -31,5 +31,5 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   // Executa o middleware em todas as rotas, exceto nas de API, ficheiros estáticos, imagens e favicon.
-  matcher: ['/((?!api|_next/static|_next/image|.*\\.png$).*)'],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|LOGO.png).*)'],
 };
