@@ -1,18 +1,14 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createRowInTable, getBaserowConfig, listRows } from '@/lib/baserow';
+import { getBaserowConfig } from '@/lib/baserow';
 import { createSession } from '@/lib/session';
 import bcrypt from 'bcryptjs';
 import type { User } from '@/types';
 
 // This function now specifically fetches from the 'Users' table.
-// We assume a table named 'Users' exists with 'Email', 'Password', 'Name' fields.
 async function listUsers(): Promise<any> {
-    const { apiUrl, apiKey } = await getBaserowConfig();
-    const usersTableId = process.env.ID_DA_TABELA_USERS_BASEROW;
-    if (!usersTableId) {
-        throw new Error('ID_DA_TABELA_USERS_BASEROW environment variable is not set.');
-    }
+    // Pass true to indicate this is an auth operation
+    const { apiUrl, apiKey, usersTableId } = await getBaserowConfig(true);
 
     const listRowsUrl = new URL(`/api/database/rows/table/${usersTableId}/?user_field_names=true`, apiUrl).toString();
 
@@ -29,6 +25,8 @@ async function listUsers(): Promise<any> {
         if (response.status === 401) {
             throw new Error('Acesso não autorizado ao Baserow. Verifique a sua CHAVE_API_BASEROW.');
         }
+        const errorBody = await response.json();
+        console.error("Baserow list users error:", errorBody);
         throw new Error('Falha ao buscar utilizadores do Baserow.');
     }
     const data = await response.json();
@@ -43,9 +41,6 @@ export async function POST(req: NextRequest) {
     if (!email || !password) {
       return NextResponse.json({ message: 'Email e password são obrigatórios.' }, { status: 400 });
     }
-
-    // Ensure all required env vars are present before proceeding
-    await getBaserowConfig();
 
     const users = await listUsers();
 

@@ -14,16 +14,27 @@ interface BaserowFileMetadata {
     uploaded_at: string;
 }
 
-export async function getBaserowConfig() {
+export async function getBaserowConfig(isAuthOperation: boolean = false) {
     const apiUrl = process.env.URL_API_BASEROW;
     const apiKey = process.env.CHAVE_API_BASEROW;
     const tableId = process.env.ID_DA_TABELA_BASEROW;
+    const usersTableId = process.env.ID_DA_TABELA_USERS_BASEROW;
 
-    if (!apiUrl || !apiKey || !tableId) {
-      throw new Error('Uma ou mais variáveis de ambiente do Baserow não foram configuradas. Verifique URL_API_BASEROW, CHAVE_API_BASEROW e ID_DA_TABELA_BASEROW.');
+    if (!apiUrl || !apiKey) {
+      throw new Error('As variáveis de ambiente URL_API_BASEROW ou CHAVE_API_BASEROW não foram configuradas.');
+    }
+    
+    if (isAuthOperation) {
+        if (!usersTableId) {
+            throw new Error('A variável de ambiente ID_DA_TABELA_USERS_BASEROW não foi configurada. Esta variável é necessária para login e registo.');
+        }
+    } else {
+        if (!tableId) {
+            throw new Error('A variável de ambiente ID_DA_TABELA_BASEROW não foi configurada. Esta variável é necessária para as operações de imagem.');
+        }
     }
 
-    return { apiUrl, apiKey, tableId };
+    return { apiUrl, apiKey, tableId: tableId!, usersTableId: usersTableId };
 }
 
 
@@ -58,7 +69,7 @@ export async function uploadFile(
 
 // Generic function to create a row in any table
 export async function createRowInTable(tableId: string, rowData: Record<string, any>): Promise<any> {
-    const { apiUrl, apiKey } = await getBaserowConfig();
+    const { apiUrl, apiKey } = await getBaserowConfig(true); // Assume auth context for generic creation might need user table
     const createRowUrl = new URL(`/api/database/rows/table/${tableId}/?user_field_names=true`, apiUrl).toString();
 
     const response = await fetch(createRowUrl, {

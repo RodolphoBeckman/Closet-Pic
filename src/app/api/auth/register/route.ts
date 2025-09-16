@@ -1,15 +1,11 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createRowInTable, getBaserowConfig, listRows } from '@/lib/baserow';
+import { createRowInTable, getBaserowConfig } from '@/lib/baserow';
 import bcrypt from 'bcryptjs';
 
 // This function now specifically fetches from the 'Users' table.
 async function listUsers(): Promise<any> {
-    const { apiUrl, apiKey } = await getBaserowConfig();
-    const usersTableId = process.env.ID_DA_TABELA_USERS_BASEROW;
-    if (!usersTableId) {
-        throw new Error('ID_DA_TABELA_USERS_BASEROW environment variable is not set.');
-    }
+    const { apiUrl, apiKey, usersTableId } = await getBaserowConfig(true);
 
     const listRowsUrl = new URL(`/api/database/rows/table/${usersTableId}/?user_field_names=true`, apiUrl).toString();
 
@@ -20,6 +16,9 @@ async function listUsers(): Promise<any> {
     });
 
     if (!response.ok) {
+        if (response.status === 404) {
+             throw new Error(`Tabela de utilizadores não encontrada. Verifique se o ID_DA_TABELA_USERS_BASEROW (${usersTableId}) está correto.`);
+        }
         throw new Error('Falha ao buscar utilizadores do Baserow para verificação.');
     }
     const data = await response.json();
@@ -28,13 +27,8 @@ async function listUsers(): Promise<any> {
 
 
 async function createUser(rowData: Record<string, any>): Promise<any> {
-    const { apiUrl, apiKey } = await getBaserowConfig();
-    const usersTableId = process.env.ID_DA_TABELA_USERS_BASEROW;
-    if (!usersTableId) {
-        throw new Error('ID_DA_TABELA_USERS_BASEROW environment variable is not set.');
-    }
-    
-    return createRowInTable(usersTableId, rowData);
+    const { usersTableId } = await getBaserowConfig(true);
+    return createRowInTable(usersTableId!, rowData);
 }
 
 export async function POST(req: NextRequest) {
@@ -50,9 +44,6 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ message: 'A password deve ter pelo menos 6 caracteres.' }, { status: 400 });
     }
     
-    // Ensure all required env vars are present before proceeding
-    await getBaserowConfig();
-
     // Check if user already exists
     const users = await listUsers();
     const existingUser = users.find((u: any) => u.Email && u.Email.toLowerCase() === email.toLowerCase());
