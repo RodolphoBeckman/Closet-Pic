@@ -21,8 +21,8 @@ export async function getBaserowConfig() {
     const tableId = process.env.ID_DA_TABELA_BASEROW;
     const usersTableId = process.env.ID_DA_TABELA_USERS_BASEROW;
 
-    if (!apiUrl || !apiKey || !tableId || !usersTableId) {
-      throw new Error('Uma ou mais variáveis de ambiente do Baserow não foram configuradas. Verifique URL_API_BASEROW, CHAVE_API_BASEROW, ID_DA_TABELA_BASEROW e ID_DA_TABELA_USERS_BASEROW.');
+    if (!apiUrl || !apiKey || !tableId) {
+      throw new Error('Uma ou mais variáveis de ambiente do Baserow não foram configuradas. Verifique URL_API_BASEROW, CHAVE_API_BASEROW e ID_DA_TABELA_BASEROW.');
     }
 
     return { apiUrl, apiKey, tableId, usersTableId };
@@ -132,6 +132,11 @@ export async function listRows(): Promise<any> {
 export async function findUserByEmail(email: string): Promise<BaserowUser | null> {
     const { apiUrl, apiKey, usersTableId } = await getBaserowConfig();
     
+    if (!usersTableId) {
+        console.warn("ID_DA_TABELA_USERS_BASEROW not set, skipping findUserByEmail.");
+        return null;
+    }
+
     const url = new URL(`/api/database/rows/table/${usersTableId}/`, apiUrl);
     url.searchParams.append('user_field_names', 'true');
     // Use `contains` for case-insensitive search

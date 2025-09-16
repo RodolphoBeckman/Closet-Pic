@@ -47,18 +47,6 @@ function HomePageContent() {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
   
-  const searchParams = useSearchParams();
-
-  useEffect(() => {
-    const error = searchParams.get('error');
-    if(error){
-      toast({
-        title: 'Erro de Login',
-        description: error,
-        variant: 'destructive'
-      });
-    }
-  }, [searchParams, toast]);
 
   useEffect(() => {
     const fetchImages = async () => {
@@ -458,5 +446,3 @@ export default function Home() {
     </Suspense>
   )
 }
-
-    

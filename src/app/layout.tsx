@@ -1,12 +1,9 @@
 'use client';
-import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from '@/components/theme-provider';
-import { useEffect, useState } from 'react';
-import type { UserSession } from '@/types';
+import { useEffect } from 'react';
 import Header from '@/components/header';
-import { usePathname } from 'next/navigation';
 
 // export const metadata: Metadata = {
 //   title: 'ClosetPic',
@@ -18,9 +15,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [user, setUser] = useState<UserSession | null>(null);
-  const pathname = usePathname();
-
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       document.body.style.setProperty('--mouse-x', `${e.clientX}px`);
@@ -31,29 +25,6 @@ export default function RootLayout({
       window.removeEventListener('mousemove', handleMouseMove);
     };
   }, []);
-
-  useEffect(() => {
-    // Este useEffect agora só busca a sessão para exibir no cabeçalho.
-    // A proteção de rotas é feita inteiramente pelo middleware.
-    const checkSession = async () => {
-      try {
-        const response = await fetch('/api/auth/session');
-        if (response.ok) {
-          const data = await response.json();
-          setUser(data.session || null);
-        } else {
-          setUser(null);
-        }
-      } catch (error) {
-        console.error("Failed to fetch session:", error);
-        setUser(null);
-      }
-    };
-    
-    checkSession();
-  }, [pathname]);
-
-  const isPublicPage = ['/login', '/register'].includes(pathname);
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -84,7 +55,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {!isPublicPage && <Header user={user} />}
+          <Header />
           {children}
           <Toaster />
         </ThemeProvider>
