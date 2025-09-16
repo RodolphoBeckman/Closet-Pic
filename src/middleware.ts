@@ -1,31 +1,32 @@
 
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { decrypt } from '@/lib/session';
+import { getSession } from '@/lib/session';
 
+// Rotas que não requerem autenticação
 const publicRoutes = ['/login', '/register'];
 
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
   const isPublicRoute = publicRoutes.includes(path);
+  
+  // Obtém a sessão diretamente do cookie, pois o `getSession` do lado do servidor funciona aqui
+  const session = await getSession();
 
-  const cookie = req.cookies.get('session')?.value;
-  const session = await decrypt(cookie);
-
-  // Se o utilizador está logado e tenta aceder a uma página pública (login/registo),
-  // redireciona-o para a página principal.
+  // REGRA 1: Redirecionar para a página principal se o utilizador estiver logado e tentar aceder a uma rota pública
   if (isPublicRoute && session?.email) {
     return NextResponse.redirect(new URL('/', req.nextUrl));
   }
 
-  // Se o utilizador não está logado e tenta aceder a uma página protegida,
-  // redireciona-o para a página de login.
+  // REGRA 2: Redirecionar para o login se o utilizador não estiver logado e tentar aceder a uma rota protegida
   if (!isPublicRoute && !session?.email) {
     return NextResponse.redirect(new URL('/login', req.nextUrl));
   }
 
-  // Em todos os outros casos (utilizador logado em página protegida, ou não logado em página pública),
-  // permite que a requisição continue.
+  // Se nenhuma das condições acima for atendida, permita que a requisição continue.
+  // Casos:
+  // - Utilizador logado acedendo a uma rota protegida (ex: /)
+  // - Utilizador não logado acedendo a uma rota pública (ex: /login)
   return NextResponse.next();
 }
 
