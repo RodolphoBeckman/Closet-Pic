@@ -55,12 +55,21 @@ function HomePageContent() {
         const response = await fetch('/api/images');
 
         if (!response.ok) {
-          const errorData = await response.json();
-          // Special check for config error
-          if (response.status === 400 && errorData.message.includes('variáveis de ambiente')) {
-             setConfigError(errorData.message);
+          // Check if the response is JSON before parsing
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json();
+            // Special check for config error
+            if (response.status === 500 && errorData.message.includes('variáveis de ambiente')) {
+               setConfigError(errorData.message);
+            } else {
+              throw new Error(errorData.message || 'Failed to fetch images.');
+            }
           } else {
-            throw new Error(errorData.message || 'Failed to fetch images.');
+             // If not JSON, it's likely an HTML error page from Next.js
+             const errorText = await response.text();
+             console.error("Non-JSON error response:", errorText);
+             throw new Error(`Server error: ${response.statusText}`);
           }
           return; // Stop processing if there was an error
         }
