@@ -68,8 +68,3 @@ export interface BaserowUser {
   CREATED_AT: string;
   [key: string]: any; // Allow other properties
 }
-
-export interface UserSession {
-  name: string;
-  email: string;
-}
