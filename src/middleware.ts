@@ -2,40 +2,32 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getSession } from '@/lib/session';
 
-const publicRoutes = ['/login', '/register'];
+// 1. Especifique as rotas públicas
+const publicPaths = ['/login', '/register'];
 
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
-  const isPublicRoute = publicRoutes.includes(path);
-  
+  const isPublicPath = publicPaths.includes(path);
+
+  // 2. Obtenha a sessão
   const session = await getSession();
 
-  // Se a rota for pública
-  if (isPublicRoute) {
-    // Se o usuário estiver logado e tentar acessar login/register, redireciona para a home
-    if (session) {
-      return NextResponse.redirect(new URL('/', req.nextUrl));
-    }
-    // Se não estiver logado, permite o acesso à rota pública
-    return NextResponse.next();
+  // 3. Lógica de redirecionamento
+  if (!isPublicPath && !session) {
+    // 3.1. Se a rota NÃO é pública e o usuário NÃO está logado, redirecione para o login
+    return NextResponse.redirect(new URL('/login', req.url));
+  }
+  
+  if (isPublicPath && session) {
+    // 3.2. Se a rota É pública e o usuário ESTÁ logado, redirecione para a página principal
+    return NextResponse.redirect(new URL('/', req.url));
   }
 
-  // Se a rota for protegida
-  // Se o usuário não estiver logado, redireciona para o login
-  if (!session) {
-    return NextResponse.redirect(new URL('/login', req.nextUrl));
-  }
-
-  // Se estiver logado, permite o acesso à rota protegida
+  // 4. Se nenhuma das condições acima for atendida, permita o acesso
   return NextResponse.next();
 }
 
+// 5. Configure o matcher para executar o middleware em todas as rotas, EXCETO nas rotas de API e ficheiros estáticos.
 export const config = {
-  // O middleware será executado em todas as rotas, EXCETO naquelas que começam com:
-  // - api/ (rotas de API)
-  // - _next/static (ficheiros estáticos)
-  // - _next/image (ficheiros de otimização de imagem)
-  // - favicon.ico (ícone do site)
-  // - /LOGO.png (o seu logo)
   matcher: ['/((?!api|_next/static|_next/image|favicon.ico|LOGO.png).*)'],
 };
